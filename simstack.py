@@ -272,17 +272,18 @@ def simultaneous_stack_array_oned(p, layers_1d, data1d, err1d=None, arg_order=No
     v = p.valuesdict()
 
     len_model = len(data1d)
-    nlayers = len(layers_1d) / len_model
+    nlayers = len(layers_1d) // len_model
 
     model = np.zeros(len_model)
 
     for i in range(nlayers):
         # print(v.keys()[i])
         # print(arg_order[i])
+        # pdb.set_trace()
         if arg_order != None:
             model[:] += layers_1d[i * len_model:(i + 1) * len_model] * v[arg_order[i]]
         else:
-            model[:] += layers_1d[i * len_model:(i + 1) * len_model] * v[v.keys()[i]]
+            model[:] += layers_1d[i * len_model:(i + 1) * len_model] * v[list(v.keys())[i]]
 
     # Take the mean of the layers after they've been summed together
     model -= np.mean(model)
@@ -422,32 +423,35 @@ def stack_libraries_in_layers(
     cwavelengths = []
     radius = 1.1
     for iwv in range(nwv):
-        print('stacking ' + map_library.keys()[iwv])
+        #pdb.set_trace()
+        ikey = list(map_library.keys())[iwv]
+        print('stacking ' + ikey)
         # READ MAPS
-        cmap = map_library[map_library.keys()[iwv]].map
-        cnoise = map_library[map_library.keys()[iwv]].noise
-        cwv = map_library[map_library.keys()[iwv]].wavelength
-        crms = map_library[map_library.keys()[iwv]].rms
-        cname = map_library.keys()[iwv]
+        cmap = map_library[ikey].map
+        cnoise = map_library[ikey].noise
+        cwv = map_library[ikey].wavelength
+        crms = map_library[ikey].rms
+        cname = ikey
         cwavelengths.append(cwv)
-        chd = map_library[map_library.keys()[iwv]].header
-        pixsize = map_library[map_library.keys()[iwv]].pixel_size
-        kern = map_library[map_library.keys()[iwv]].psf
-        fwhm = map_library[map_library.keys()[iwv]].fwhm
+        chd = map_library[ikey].header
+        pixsize = map_library[ikey].pixel_size
+        kern = map_library[ikey].psf
+        fwhm = map_library[ikey].fwhm
         cw = WCS(chd)
         cms = np.shape(cmap)
         zeromask = np.ones(np.shape(cmap))
         # ind_map_zero = np.where(np.isnan(cmap))
         ind_map_zero = np.where(clean_nans(cmap) == 0.0)
         zeromask[ind_map_zero] = 0.0
-        # pdb.set_trace()
 
         # STEP 1  - Make Layers Cube at each wavelength
         layers = np.zeros([nlists, cms[0], cms[1]])
         ngals_layer = {}
 
         for k in range(nlists):
-            s = lists[k]
+            s = list(lists)[k]
+            #pdb.set_trace()
+
             if len(subcatalog_library[s][0]) > 0:
                 ra = subcatalog_library[s][0]
                 dec = subcatalog_library[s][1]
@@ -503,7 +507,7 @@ def stack_libraries_in_layers(
         fit_params = Parameters()
         # pdb.set_trace()
         for iarg in range(nlists):
-            arg = clean_args(lists[iarg])
+            arg = clean_args(list(lists)[iarg])
             fit_params.add(arg, value=1e-3 * np.random.randn())
 
         if len(ierr) == 0: pdb.set_trace()

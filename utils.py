@@ -254,7 +254,7 @@ def dist_idl(n1,m1=None):
 
   a = np.zeros([int(n1),int(m1)])
 
-  i2 = m1/2 + 1
+  i2 = m1//2 + 1
 
   for i in range(i2):
     y = np.sqrt(x + i ** 2.)

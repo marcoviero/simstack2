@@ -113,26 +113,29 @@ class Field_catalogs:
 		#Set (descending) order of cuts.
 		#names      = [k for k in cuts_dict][::-1]
 		#reverse_ind here is the arguments indices in reversed order
-		reverse_ind = np.argsort([cuts_dict[k][0] for k in cuts_dict])[::-1]
-		ind         = [cuts_dict[k][0] for k in cuts_dict]
-		conditions  = [cuts_dict[k][1] for k in cuts_dict]
+		reverse_ind = np.argsort([int(cuts_dict[k].split(' ')[0])  for k in cuts_dict])[::-1]
+		ind         = [int(cuts_dict[k].split(' ')[0]) for k in cuts_dict]
+		conditions  = [cuts_dict[k].split(' ')[1:] for k in cuts_dict]
 
-		pdb.set_trace()
+		#pdb.set_trace()
 		for i in range(self.nsrc):
 			# Go through conditions in descending order.
 			# continue when one is satisfied
 			for j in range(Ncrit):
 				icut = reverse_ind[j]
 				ckey = conditions[icut][0]
-				if (conditions[icut][1] == False) & (conditions[icut][2] == False):
+				#pdb.set_trace()
+				if (conditions[icut][1] == 'False') & (conditions[icut][2] == 'False'):
+					#pdb.set_trace()
 					if (self.table[ckey].values[i] == conditions[icut][3]):
+						pdb.set_trace()
 						sfg[i]=ind[icut]
 						continue
-				elif conditions[icut][1] == False:
+				elif conditions[icut][1] == 'False':
 					if (self.table[ckey].values[i] < conditions[icut][2]):
 						sfg[i]=ind[icut]
 						continue
-				elif conditions[icut][2] == False:
+				elif conditions[icut][2] == 'False':
 					if (self.table[ckey].values[i] > conditions[icut][1]):
 						sfg[i]=ind[icut]
 						continue
@@ -148,6 +151,7 @@ class Field_catalogs:
 						if (self.table[self.zkey][i] > 1):
 							if (self.table[self.uvkey][i] > (self.table[self.vjkey][i]*0.88+0.59) ): sfg[i]=0
 
+		#pdb.set_trace()
 		self.table['sfg'] = sfg
 
 	def separate_sf_qt(self):
@@ -312,6 +316,8 @@ class Field_catalogs:
 
 	def get_subpop_ids(self, znodes, mnodes, pop_dict, linear_mass=1, lookback_time = False):
 		self.subpop_ids = {}
+
+		#pdb.set_trace()
 		if lookback_time == True:
 			age_universe = cosmo.age(0).value # 13.797617455819209 Gyr
 			znodes = np.array([z_at_value(cosmo.age,(age_universe - i) * u.Gyr) for i in znodes])
@@ -320,10 +326,10 @@ class Field_catalogs:
 			for jm in range(len(mnodes[:-1])):
 				for k in pop_dict:
 					if linear_mass == 1:
-						ind_mz =( (self.table.sfg.values == pop_dict[k][0]) & (self.table[self.zkey] >= np.min(znodes[iz:iz+2])) & (self.table[self.zkey] < np.max(znodes[iz:iz+2])) &
+						ind_mz =( (self.table.sfg.values == int(pop_dict[k].split(' ')[0])) & (self.table[self.zkey] >= np.min(znodes[iz:iz+2])) & (self.table[self.zkey] < np.max(znodes[iz:iz+2])) &
 							(10**self.table[self.mkey] >= 10**np.min(mnodes[jm:jm+2])) & (10**self.table[self.mkey] < 10**np.max(mnodes[jm:jm+2])) )
 					else:
-						ind_mz =( (self.table.sfg == pop_dict[k][0]) & (self.table[self.zkey] >= np.min(znodes[iz:iz+2])) & (self.table[self.zkey] < np.max(znodes[iz:iz+2])) &
+						ind_mz =( (self.table.sfg == int(pop_dict[k].split(' ')[0])) & (self.table[self.zkey] >= np.min(znodes[iz:iz+2])) & (self.table[self.zkey] < np.max(znodes[iz:iz+2])) &
 							(self.table[self.mkey] >= np.min(mnodes[jm:jm+2])) & (self.table[self.mkey] < np.max(mnodes[jm:jm+2])) )
 
 					self.subpop_ids['z_'+clean_args(str('{:.2f}'.format(znodes[iz])))+'_'+clean_args(str('{:.2f}'.format(znodes[iz+1])))+'__m_'+clean_args(str('{:.2f}'.format(mnodes[jm])))+'_'+clean_args(str('{:.2f}'.format(mnodes[jm+1])))+'_'+k] = self.table.ID[ind_mz].values
