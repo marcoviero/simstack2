@@ -42,7 +42,7 @@ def main():
         datefmt='%Y-%d-%m %I:%M:%S %p')
 
     # Get parameters from the provided parameter file
-    param_file_path = os.path.join('examples','example.ini')#sys.argv[1]
+    param_file_path = os.path.join('../examples', 'example.ini')#sys.argv[1]
     params = parameters.get_params_dict(param_file_path)
 
     pdb.set_trace()

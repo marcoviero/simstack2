@@ -13,7 +13,6 @@ from scipy.optimize import curve_fit
 import scipy.io
 from scipy import fftpack
 from lmfit import Parameters, minimize, fit_report
-from radial_data import radial_data
 import pylab as plt
 
 pi=3.141592653589793
@@ -29,19 +28,6 @@ k = 1.38064852e-23 #m2 kg s-2 K-1 8.617e-5 #eV/K
 gc.enable()
 
 ## A
-
-def alex_power_spec(map1, map2=None, deltal = 1, pixsize = 5.0):
-
-  dims = np.shape(map1)
-  if (map2 != None):
-    spec = fftpack.fftshift(fftpack.fft2(map1)) * np.conj(fftpack.fftshift(fftpack.fft2(map2))) * (pi*pixsize/10800./60.)**2.0 * (dims[0]*dims[1])
-  else:
-    spec = np.abs(fftpack.fftshift(fftpack.fft2(map1))*(pi*pixsize/10800./60.))**2.0 * (dims[0]*dims[1])
-
-  spec1d = radial_data(spec, annulus_width = deltal)
-
-  return spec1d
-
 
 ## B
 def bin_ndarray(ndarray, new_shape, operation='sum'):
