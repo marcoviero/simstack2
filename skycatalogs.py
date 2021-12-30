@@ -21,6 +21,7 @@ class Skycatalogs:
 				self.catalog_dict['table'] = table
 		else:
 			print("Catalog not found: "+path_catalog)
+			pdb.set_trace()
 
 		split_dict = json.loads(self.config_dict['catalog']['classification'])
 		split_type = split_dict.pop('split_type')
