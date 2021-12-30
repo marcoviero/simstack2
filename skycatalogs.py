@@ -9,50 +9,70 @@ class Skycatalogs:
 
 		self.config_dict = config_dict
 
-	def import_catalog(self, keep_raw_table=False):
+	def import_catalog(self):
 
 		self.catalog_dict = {}
 
 		catalog_params = self.config_dict['catalog']
 		path_catalog = os.path.join(self.parse_path(catalog_params['path']), catalog_params['file'])
 		if os.path.isfile(path_catalog):
-			table = pd.read_table(path_catalog, sep=',')
-			if keep_raw_table:
-				self.catalog_dict['table'] = table
+			self.catalog_dict['table'] = pd.read_table(path_catalog, sep=',')
 		else:
 			print("Catalog not found: "+path_catalog)
 			pdb.set_trace()
 
+		self.split_table_by_populations()
+
+	def split_table_by_populations(self):
+
+		# Make new table starting with RA and DEC
+		astrometry_keys = json.loads(self.config_dict['catalog']['astrometry'])
+		self.split_table = {}
+		self.split_table['table'] = pd.DataFrame(self.catalog_dict['table'][astrometry_keys.values()])
+		self.split_table['table'].rename(columns={astrometry_keys["ra"]: "ra", astrometry_keys["dec"]: "dec"}, inplace=True)
+
+		# Split catalog by classification type
 		split_dict = json.loads(self.config_dict['catalog']['classification'])
 		split_type = split_dict.pop('split_type')
 
-		self.split_table_by_populations(table, split_dict, split_type)
-
-	def split_table_by_populations(self, table, split_dict, split_type='uvj'):
-
-		#table = self.catalog_dict['table']
-		astrometry_keys = json.loads(self.config_dict['catalog']['astrometry'])
-		self.split_table = pd.DataFrame(table[astrometry_keys.values()])
-		self.split_table.rename(columns={astrometry_keys["ra"]: "ra", astrometry_keys["dec"]: "dec"}, inplace=True)
-
-		if 'uvj' in split_type:
-			self.separate_sf_qt()
-
+		# By labels means unique values inside columns (e.g., "CLASS" = [0,1,2])
 		if 'labels' in split_type:
-			split_keys = list(split_dict.keys())
-			for key in split_keys:
-				if type(split_dict[key]['bins']) is str:
-					bins = json.loads(split_dict[key]['bins'])
-					parameter_names = ["_".join([key, str(bins[i]), str(bins[i + 1])]) for i in range(len(bins[:-1]))]
-				else:
-					bins = split_dict[key]['bins']
-					parameter_names = ["_".join([key, str(i)]) for i in range(bins)]
-				labels = False
-				col = pd.cut(table[split_dict[key]['id']], bins=bins, labels=labels)
-				col.name = key
-				self.split_table = self.split_table.join(col)
+			self.separate_by_label(split_dict)
 
-	def separate_sf_qt(self):
+		# By uvj means it splits into star-forming and quiescent galaxies via the u-v/v-j method.
+		if 'uvj' in split_type:
+			self.separate_sf_qt(split_dict)
+
+	def separate_by_label(self, split_dict):
+		table = self.catalog_dict['table']
+		parameter_names = {}
+		label_keys = list(split_dict.keys())
+		for key in label_keys:
+			if type(split_dict[key]['bins']) is str:
+				bins = json.loads(split_dict[key]['bins'])
+				parameter_names[key] = ["_".join([key, str(bins[i]), str(bins[i + 1])]) for i in range(len(bins[:-1]))]
+			else:
+				bins = split_dict[key]['bins']
+				parameter_names[key] = ["_".join([key, str(i)]) for i in range(bins)]
+			# Categorize using pandas.cut.  So good.
+			col = pd.cut(table[split_dict[key]['id']], bins=bins, labels=False)
+			col.name = key  # Rename column to label
+			# Add column to table
+			self.split_table['table'] = self.split_table['table'].join(col)
+
+		# Name Cube Layers (i.e., parameters)
+		self.split_table['parameter_labels'] = []
+		for ipar in parameter_names[label_keys[0]]:
+			for jpar in parameter_names[label_keys[1]]:
+				if len(label_keys) > 2:
+					for kpar in parameter_names[label_keys[2]]:
+						pn = "__".join([ipar, jpar, kpar])
+						self.split_table['parameter_labels'].append(pn)
+				else:
+					pn = "__".join([ipar, jpar])
+					self.split_table['parameter_labels'].append(pn)
+
+	def separate_sf_qt(self, split_dict):
 		table = self.catalog_dict['table']
 		nsrc = len(table)
 		sfg = np.ones(nsrc)

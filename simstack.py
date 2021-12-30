@@ -6,7 +6,7 @@ class SimstackWrapper(SimstackAlgorithm):
         super().__init__(param_path_file)
 
         if read_catalog:
-            self.import_catalog(keep_raw_table=True)
+            self.import_catalog()
 
         if read_maps:
             self.import_maps()

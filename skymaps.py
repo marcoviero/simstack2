@@ -56,7 +56,8 @@ class Skymaps:
 			cmap, hd = fits.getdata(file_map, header_ext_map, header=True)
 			cnoise, nhd = fits.getdata(file_map, header_ext_noise, header=True)
 		else:
-			print("Files not found: "+file_map)
+			print("Files not found, check path in config file: "+file_map)
+			pdb.set_trace()
 
 		#GET MAP PIXEL SIZE
 		if 'CD2_2' in hd:
@@ -80,9 +81,8 @@ class Skymaps:
 				raise ValueError("Beam and Map have different size pixels")
 				scale_beam = pix_beam / pix
 				pms = np.shape(beam)
-				new_shape=(np.round(pms[0]*scale_beam), np.round(pms[1]*scale_beam))
-				#pdb.set_trace()
-				kern = rebin_kernel(clean_nans(beam), new_shape=new_shape,operation='ave')
+				new_shape = (np.round(pms[0]*scale_beam), np.round(pms[1]*scale_beam))
+				kern = rebin_kernel(clean_nans(beam), new_shape=new_shape, operation='ave')
 			else:
 				kern = clean_nans(beam)
 			map_dict["psf_pixel_size"] = pix_beam
@@ -90,7 +90,6 @@ class Skymaps:
 			fwhm = psf
 			#sig = fwhm / 2.355 / pix
 			kern = gauss_kern(psf, np.floor(fwhm * 8.)/pix, pix)
-
 
 		map_dict["map"] = clean_nans(cmap) * color_correction
 		map_dict["noise"] = clean_nans(cnoise, replacement_char=1e10) * color_correction
@@ -109,5 +108,3 @@ class Skymaps:
 			map_dict["fwhm"] = fwhm
 
 		return map_dict
-
-

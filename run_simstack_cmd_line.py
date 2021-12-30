@@ -34,8 +34,8 @@ def main():
         datefmt='%Y-%d-%m %I:%M:%S %p')
 
     # Get parameters from the provided parameter file
-    param_file_path = sys.argv[1]
-    #param_file_path = os.path.join('examples','example.ini')#sys.argv[1]
+    #param_file_path = sys.argv[1]
+    param_file_path = os.path.join('examples','example.ini')#sys.argv[1]
 
     # Instantiate SIMSTACK object
     simstack_object = SimstackWrapper(param_file_path)
@@ -45,12 +45,12 @@ def main():
     # Begin Stacking
     simstack_object.perform_simstack()
 
-    # Save Results
+    # Save Results; they are stored in e.g., simstack_object.maps_dict['spire_plw']['stacked_flux_densities']
     #save_stacked_fluxes(stacked_flux_densities, params, out_file_path, out_file_suffix, IDs=bin_ids)
     # pdb.set_trace()
 
     # Save Parameter file in folder
-    save_paramfile(simstack_object.config_dict)
+    #save_paramfile(simstack_object.config_dict)
 
     # Summarize timing
     t1 = time.time()
@@ -59,6 +59,8 @@ def main():
     logging.info("Done!")
     logging.info("")
     logging.info("Total time                        : {:.4f} minutes\n".format(tpass / 60.))
+
+    pdb.set_trace()
 
 def save_stacked_fluxes(stacked_fluxes, params, out_file_path, out_file_suffix, IDs=None):
     fpath = "%s/%s_%s%s.p" % (

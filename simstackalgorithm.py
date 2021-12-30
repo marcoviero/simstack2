@@ -19,19 +19,22 @@ class SimstackAlgorithm(SimstackSettings, Skymaps, Skycatalogs):
     def perform_simstack(self):
 
         # Get catalog.  Clean NaNs
-        catalog = self.split_table.dropna()
+        catalog = self.split_table['table'].dropna()
 
         # Get binning details
         binning = json.loads(self.config_dict['general']['binning'])
 
+        split_dict = json.loads(self.config_dict['catalog']['classification'])
         # Stack in redshift slices if bin_all_at_once is False
         if binning['bin_all_at_once'] == "False":
             redshifts = catalog.pop("redshift")
+            bins = json.loads(split_dict["redshift"]['bins'])
             for i in np.unique(redshifts):
                 catalog_in = catalog[redshifts == i]
-                self.stack_in_wavelengths(catalog_in, distance_interval=str(i))
+                name = "_".join(["redshift", str(bins[int(i)]), str(bins[int(i) + 1])]).replace('.', 'p')
+                self.stack_in_wavelengths(catalog_in, distance_interval=name)
         else:
-            self.stack_in_wavelengths(catalog, distance_interval='all')
+            self.stack_in_wavelengths(catalog, distance_interval='all_redshifts')
 
     def stack_in_wavelengths(self, catalog, distance_interval=None):
 
@@ -57,9 +60,9 @@ class SimstackAlgorithm(SimstackSettings, Skymaps, Skycatalogs):
 
         fit_params = Parameters()
 
-        print("Give these parameters real names!")
         for iarg in range(len(cube)):
-            fit_params.add('layer' + str(iarg), value=1e-3 * np.random.randn())
+            parameter_label = self.split_table['parameter_labels'][iarg].replace('.','p')
+            fit_params.add(parameter_label, value=1e-3 * np.random.randn())
 
         cov_ss_1d = minimize(self.simultaneous_stack_array_oned, fit_params,
                              args=(np.ndarray.flatten(cube),),
@@ -175,8 +178,9 @@ class SimstackAlgorithm(SimstackSettings, Skymaps, Skycatalogs):
         ty, tx = wmap.wcs_world2pix(ra, dec, 0)
         # CHECK FOR SOURCES THAT FALL OUTSIDE MAP
         ind_keep = np.where((tx >= 0) & (np.round(tx) < cms[0]) & (ty >= 0) & (np.round(ty) < cms[1]))
-        nt0 = np.shape(ind_keep)[1]
         real_x = np.round(tx[ind_keep]).astype(int)
         real_y = np.round(ty[ind_keep]).astype(int)
 
         return real_x, real_y
+
+
