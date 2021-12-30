@@ -6,15 +6,15 @@ from astropy.wcs import WCS
 from utils import circle_mask
 from utils import gauss_kern
 from utils import smooth_psf
+from lmfit import Parameters, minimize, fit_report
 from skymaps import Skymaps
 from skycatalogs import Skycatalogs
-from lmfit import Parameters, minimize, fit_report
+from simstacksettings import SimstackSettings
 
+class SimstackAlgorithm(SimstackSettings, Skymaps, Skycatalogs):
 
-class SimstackAlgorithm(Skymaps, Skycatalogs):
-
-    def __init__(self):
-        super().__init__()
+    def __init__(self, param_path_file):
+        super().__init__(param_path_file)
 
     def perform_simstack(self):
 
@@ -29,18 +29,22 @@ class SimstackAlgorithm(Skymaps, Skycatalogs):
             redshifts = catalog.pop("redshift")
             for i in np.unique(redshifts):
                 catalog_in = catalog[redshifts == i]
-                self.stack_in_wavelengths(catalog_in)
+                self.stack_in_wavelengths(catalog_in, distance_interval=str(i))
         else:
-            self.stack_in_wavelengths(catalog)
+            self.stack_in_wavelengths(catalog, distance_interval='all')
 
-    def stack_in_wavelengths(self, catalog):
+    def stack_in_wavelengths(self, catalog, distance_interval=None):
 
         map_keys = list(self.maps_dict.keys())
         for wv in map_keys:
             map_dict = self.maps_dict[wv]
             cube = self.build_cube(map_dict, catalog)
             cov_ss_1d = self.regress_cube_layers(cube)
-            self.maps_dict[wv]['stacked_flux_densities'] = cov_ss_1d
+            #pdb.set_trace()
+            if 'stacked_flux_densities' not in self.maps_dict[wv]:
+                self.maps_dict[wv]['stacked_flux_densities'] = {distance_interval: cov_ss_1d}
+            else:
+                self.maps_dict[wv]['stacked_flux_densities'][distance_interval] = cov_ss_1d
 
     def regress_cube_layers(self, cube):
 

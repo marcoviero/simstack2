@@ -16,16 +16,16 @@ class Skycatalogs:
 		catalog_params = self.config_dict['catalog']
 		path_catalog = os.path.join(self.parse_path(catalog_params['path']), catalog_params['file'])
 		if os.path.isfile(path_catalog):
-			tbl = pd.read_table(path_catalog, sep=',')
+			table = pd.read_table(path_catalog, sep=',')
 			if keep_raw_table:
-				self.catalog_dict['table'] = tbl
+				self.catalog_dict['table'] = table
 		else:
 			print("Catalog not found: "+path_catalog)
 
 		split_dict = json.loads(self.config_dict['catalog']['classification'])
 		split_type = split_dict.pop('split_type')
 
-		self.split_table_by_populations(tbl, split_dict, split_type)
+		self.split_table_by_populations(table, split_dict, split_type)
 
 	def split_table_by_populations(self, table, split_dict, split_type='uvj'):
 
@@ -42,8 +42,10 @@ class Skycatalogs:
 			for key in split_keys:
 				if type(split_dict[key]['bins']) is str:
 					bins = json.loads(split_dict[key]['bins'])
+					parameter_names = ["_".join([key, str(bins[i]), str(bins[i + 1])]) for i in range(len(bins[:-1]))]
 				else:
 					bins = split_dict[key]['bins']
+					parameter_names = ["_".join([key, str(i)]) for i in range(bins)]
 				labels = False
 				col = pd.cut(table[split_dict[key]['id']], bins=bins, labels=labels)
 				col.name = key

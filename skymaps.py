@@ -48,13 +48,15 @@ class Skymaps:
 		#SPIRE Maps have Noise maps in the second extension.
 		if file_map == file_noise:
 			header_ext_map = 1
-			header_noise = 2
+			header_ext_noise = 2
 		else:
 			header_ext_map = 0
 			header_ext_noise = 0
-
-		cmap, hd = fits.getdata(file_map, header_ext_map, header = True)
-		cnoise, nhd = fits.getdata(file_map, header_ext_noise, header = True)
+		if os.path.isfile(file_map) and os.path.isfile(file_noise):
+			cmap, hd = fits.getdata(file_map, header_ext_map, header=True)
+			cnoise, nhd = fits.getdata(file_map, header_ext_noise, header=True)
+		else:
+			print("Files not found: "+file_map)
 
 		#GET MAP PIXEL SIZE
 		if 'CD2_2' in hd:
@@ -65,7 +67,7 @@ class Skymaps:
 		#READ BEAMS
 		#Check first if beam is a filename (actual beam) or a number (approximate with Gaussian)
 		if type(psf) is str:
-			beam, phd = fits.getdata(psf, 0, header = True)
+			beam, phd = fits.getdata(psf, 0, header=True)
 			#GET PSF PIXEL SIZE
 			if 'CD2_2' in phd:
 				pix_beam = phd['CD2_2'] * 3600.
