@@ -10,8 +10,11 @@ from lmfit import Parameters, minimize, fit_report
 from skymaps import Skymaps
 from skycatalogs import Skycatalogs
 from simstacksettings import SimstackSettings
+from simstackresults import SimstackResults
 
-class SimstackAlgorithm(SimstackSettings, Skymaps, Skycatalogs):
+class SimstackAlgorithm(SimstackSettings, Skymaps, Skycatalogs, SimstackResults):
+
+    stack_successful = False
 
     def __init__(self, param_path_file):
         super().__init__(param_path_file)
@@ -25,6 +28,16 @@ class SimstackAlgorithm(SimstackSettings, Skymaps, Skycatalogs):
         binning = json.loads(self.config_dict['general']['binning'])
 
         split_dict = json.loads(self.config_dict['catalog']['classification'])
+        split_type = split_dict.pop('split_type')
+        nlists = []
+        for k in split_dict:
+            kval = split_dict[k]['bins']
+            if type(kval) is str:
+                nlists.append(len(json.loads(kval))-1) # bins so subtract 1
+            else:
+                nlists.append(kval)
+        nlayers = np.prod(nlists[1:])
+
         # Stack in redshift slices if bin_all_at_once is False
         if binning['bin_all_at_once'] == "False":
             redshifts = catalog.pop("redshift")
@@ -32,24 +45,27 @@ class SimstackAlgorithm(SimstackSettings, Skymaps, Skycatalogs):
             for i in np.unique(redshifts):
                 catalog_in = catalog[redshifts == i]
                 name = "_".join(["redshift", str(bins[int(i)]), str(bins[int(i) + 1])]).replace('.', 'p')
-                self.stack_in_wavelengths(catalog_in, distance_interval=name)
+                labels = self.split_table['parameter_labels'][int(i*nlayers):int((i+1)*nlayers)]
+                #print(labels)
+                self.stack_in_wavelengths(catalog_in, labels=labels, distance_interval=name)
         else:
             self.stack_in_wavelengths(catalog, distance_interval='all_redshifts')
 
-    def stack_in_wavelengths(self, catalog, distance_interval=None):
+        self.stack_successful = True
+
+    def stack_in_wavelengths(self, catalog, labels=None, distance_interval=None):
 
         map_keys = list(self.maps_dict.keys())
         for wv in map_keys:
             map_dict = self.maps_dict[wv]
             cube = self.build_cube(map_dict, catalog)
-            cov_ss_1d = self.regress_cube_layers(cube)
-            #pdb.set_trace()
+            cov_ss_1d = self.regress_cube_layers(cube, labels=labels)
             if 'stacked_flux_densities' not in self.maps_dict[wv]:
                 self.maps_dict[wv]['stacked_flux_densities'] = {distance_interval: cov_ss_1d}
             else:
                 self.maps_dict[wv]['stacked_flux_densities'][distance_interval] = cov_ss_1d
 
-    def regress_cube_layers(self, cube):
+    def regress_cube_layers(self, cube, labels=None):
 
         # Extract Noise and Signal Maps from Cube (and then delete layers)
         ierr = cube[-1, :]
@@ -61,7 +77,12 @@ class SimstackAlgorithm(SimstackSettings, Skymaps, Skycatalogs):
         fit_params = Parameters()
 
         for iarg in range(len(cube)):
-            parameter_label = self.split_table['parameter_labels'][iarg].replace('.','p')
+            if not labels:
+                parameter_label = self.split_table['parameter_labels'][iarg].replace('.', 'p')
+            else:
+                parameter_label = labels[iarg].replace('.', 'p')
+
+            print(parameter_label)
             fit_params.add(parameter_label, value=1e-3 * np.random.randn())
 
         cov_ss_1d = minimize(self.simultaneous_stack_array_oned, fit_params,

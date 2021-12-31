@@ -45,15 +45,15 @@ class Skycatalogs:
 
 	def separate_by_label(self, split_dict):
 		table = self.catalog_dict['table']
-		parameter_names = {}
+		self.parameter_names = {}
 		label_keys = list(split_dict.keys())
 		for key in label_keys:
 			if type(split_dict[key]['bins']) is str:
 				bins = json.loads(split_dict[key]['bins'])
-				parameter_names[key] = ["_".join([key, str(bins[i]), str(bins[i + 1])]) for i in range(len(bins[:-1]))]
+				self.parameter_names[key] = ["_".join([key, str(bins[i]), str(bins[i + 1])]) for i in range(len(bins[:-1]))]
 			else:
 				bins = split_dict[key]['bins']
-				parameter_names[key] = ["_".join([key, str(i)]) for i in range(bins)]
+				self.parameter_names[key] = ["_".join([key, str(i)]) for i in range(bins)]
 			# Categorize using pandas.cut.  So good.
 			col = pd.cut(table[split_dict[key]['id']], bins=bins, labels=False)
 			col.name = key  # Rename column to label
@@ -62,15 +62,16 @@ class Skycatalogs:
 
 		# Name Cube Layers (i.e., parameters)
 		self.split_table['parameter_labels'] = []
-		for ipar in parameter_names[label_keys[0]]:
-			for jpar in parameter_names[label_keys[1]]:
+		for ipar in self.parameter_names[label_keys[0]]:
+			for jpar in self.parameter_names[label_keys[1]]:
 				if len(label_keys) > 2:
-					for kpar in parameter_names[label_keys[2]]:
+					for kpar in self.parameter_names[label_keys[2]]:
 						pn = "__".join([ipar, jpar, kpar])
 						self.split_table['parameter_labels'].append(pn)
 				else:
 					pn = "__".join([ipar, jpar])
 					self.split_table['parameter_labels'].append(pn)
+		#pdb.set_trace()
 
 	def separate_sf_qt(self, split_dict):
 		table = self.catalog_dict['table']

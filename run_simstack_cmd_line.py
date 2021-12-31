@@ -45,6 +45,7 @@ def main():
     # Begin Stacking
     simstack_object.perform_simstack()
 
+    simstack_object.parse_results()
     # Save Results; they are stored in e.g., simstack_object.maps_dict['spire_plw']['stacked_flux_densities']
     #save_stacked_fluxes(stacked_flux_densities, params, out_file_path, out_file_suffix, IDs=bin_ids)
     # pdb.set_trace()

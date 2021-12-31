@@ -1,4 +1,5 @@
 from simstackalgorithm import SimstackAlgorithm
+from simstackresults import SimstackResults
 
 class SimstackWrapper(SimstackAlgorithm):
 
@@ -13,3 +14,6 @@ class SimstackWrapper(SimstackAlgorithm):
 
         if stack_automatically:
             self.perform_simstack()
+
+        if self.stack_successful:
+            self.parse_results()

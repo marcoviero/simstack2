@@ -23,9 +23,6 @@ class Skymaps:
 		color_correction) and increase flexibility.
 		'''
 
-		print("Initializing Skymaps")
-		pdb.set_trace()
-
 	def import_maps(self):
 
 		self.maps_dict = {}
