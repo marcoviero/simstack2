@@ -13,7 +13,7 @@ from scipy.optimize import curve_fit
 import scipy.io
 from scipy import fftpack
 from lmfit import Parameters, minimize, fit_report
-import pylab as plt
+import matplotlib.pylab as plt
 
 pi=3.141592653589793
 L_sun = 3.839e26 # W

@@ -12,10 +12,13 @@ class SimstackSettings:
 
     def parse_path(self, path_in):
         path_in = path_in.split(" ")
+        #print(path_in)
+        #pdb.set_trace()
         if len(path_in) == 1:
             return path_in[0]
         else:
-            return os.path.join(os.environ[path_in[0]], path_in[1])
+            #return os.path.join(os.environ[path_in[0]], path_in[1])
+            return os.environ[path_in[0]] + path_in[1]
 
     def get_params_dict(self, param_file_path):
         config = ConfigParser()

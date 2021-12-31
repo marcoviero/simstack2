@@ -8,9 +8,21 @@ export MAPSPATH=$MAPSPATH/Users/marcoviero/data/Astronomy/maps/
 export CATSPATH=$CATSPATH/Users/marcoviero/data/Astronomy/catalogs/
 export PICKLESPATH=$PICKLESPATH/Users/marcoviero/data/Astronomy/pickles/
 
-Required Packages
--
+Setup New Virtual Environment
+> conda create -n simstack python=3.9
+> conda activate simstack
+
+Install Required Packages
+- matplotlib
+- pandas
+- astropy
 - lmfit
+
+To run from command line:
+- First make executable (only needed once):
+> chmod +x run_simstack_cmd_line.py
+- Run script:
+> python run_simstack_cmd_line.py
 '''
 
 # Standard modules
@@ -35,7 +47,7 @@ def main():
 
     # Get parameters from the provided parameter file
     #param_file_path = sys.argv[1]
-    param_file_path = os.path.join('examples','example.ini')#sys.argv[1]
+    param_file_path = os.path.join('examples','cosmos.ini')#sys.argv[1]
 
     # Instantiate SIMSTACK object
     simstack_object = SimstackWrapper(param_file_path)
@@ -61,6 +73,8 @@ def main():
     logging.info("")
     logging.info("Total time                        : {:.4f} minutes\n".format(tpass / 60.))
 
+    # Find fluxes in e.g.,
+    # simstack_object.results_dict['spire_plw']['flux_density']
     pdb.set_trace()
 
 def save_stacked_fluxes(stacked_fluxes, params, out_file_path, out_file_suffix, IDs=None):

@@ -47,8 +47,8 @@ class Skymaps:
 			header_ext_map = 1
 			header_ext_noise = 2
 		else:
-			header_ext_map = 0
-			header_ext_noise = 0
+			header_ext_map = 1
+			header_ext_noise = 1
 		if os.path.isfile(file_map) and os.path.isfile(file_noise):
 			cmap, hd = fits.getdata(file_map, header_ext_map, header=True)
 			cnoise, nhd = fits.getdata(file_map, header_ext_noise, header=True)
