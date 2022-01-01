@@ -53,12 +53,12 @@ class SimstackAlgorithm(SimstackSettings, Skymaps, Skycatalogs, SimstackResults)
 
         self.stack_successful = True
 
-    def stack_in_wavelengths(self, catalog, labels=None, distance_interval=None):
+    def stack_in_wavelengths(self, catalog, labels=None, distance_interval=None, crop_circles=False):
 
         map_keys = list(self.maps_dict.keys())
         for wv in map_keys:
             map_dict = self.maps_dict[wv]
-            cube = self.build_cube(map_dict, catalog.copy())
+            cube = self.build_cube(map_dict, catalog.copy(), crop_circles=crop_circles)
             cov_ss_1d = self.regress_cube_layers(cube, labels=labels)
             if 'stacked_flux_densities' not in self.maps_dict[wv]:
                 self.maps_dict[wv]['stacked_flux_densities'] = {distance_interval: cov_ss_1d}
@@ -115,7 +115,7 @@ class SimstackAlgorithm(SimstackSettings, Skymaps, Skycatalogs, SimstackResults)
 
         return (data1d - model) / err1d
 
-    def build_cube(self, map_dict, catalog):
+    def build_cube(self, map_dict, catalog, crop_circles=False):
 
         cmap = map_dict['map']
         cnoise = map_dict['noise']
@@ -131,7 +131,6 @@ class SimstackAlgorithm(SimstackSettings, Skymaps, Skycatalogs, SimstackResults)
 
         # FIND SIZES OF MAP AND LISTS
         cms = np.shape(cmap)
-        #zeromask = np.zeros(cms)
 
         nlists = []
         for k in keys:
@@ -169,11 +168,14 @@ class SimstackAlgorithm(SimstackSettings, Skymaps, Skycatalogs, SimstackResults)
                 ilayer += 1
 
         # STEP 2  - Convolve Layers and put in pixels
-        radius = 1.1
-        flattened_pixmap = np.sum(layers, axis=0)
-        total_circles_mask = circle_mask(flattened_pixmap, radius * fwhm, pix)
-        ind_fit = np.where(total_circles_mask >= 1)
-        #ind_fit = np.where((total_circles_mask >= 1) & (zeromask != 0))
+        if crop_circles:
+            radius = 1.1
+            flattened_pixmap = np.sum(layers, axis=0)
+            total_circles_mask = circle_mask(flattened_pixmap, radius * fwhm, pix)
+            ind_fit = np.where(total_circles_mask >= 1)
+        else:
+            ind_fit = np.where(0 * np.sum(layers, axis=0) == 0)
+
         nhits = np.shape(ind_fit)[1]
         cfits_maps = np.zeros([nlayers + 2, nhits])
 
@@ -181,7 +183,8 @@ class SimstackAlgorithm(SimstackSettings, Skymaps, Skycatalogs, SimstackResults)
         for umap in range(nlayers):
             layer = layers[umap, :, :]
             tmap = smooth_psf(layer, kern)
-            # tmap[ind_fit] -= np.mean(tmap[ind_fit])
+            # Uncommented following line.  Mistake?
+            #tmap[ind_fit] -= np.mean(tmap[ind_fit])
             cfits_maps[umap, :] = tmap[ind_fit]
 
         # put map and noisemap in last two layers
