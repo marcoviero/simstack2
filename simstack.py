@@ -1,5 +1,4 @@
 from simstackalgorithm import SimstackAlgorithm
-#from simstackresults import SimstackResults
 
 class SimstackWrapper(SimstackAlgorithm):
 
