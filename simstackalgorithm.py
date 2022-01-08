@@ -2,6 +2,7 @@ import pdb
 import os
 import json
 import numpy as np
+from astropy.io import fits
 from astropy.wcs import WCS
 from utils import circle_mask
 from utils import gauss_kern
@@ -71,9 +72,8 @@ class SimstackAlgorithm(SimstackSettings, Skymaps, Skycatalogs, SimstackResults)
         ierr = cube[-1, :]
         cube = cube[:-1, :]
         # Subtract mean from map
-        imap = cube[-1, :] - np.mean(cube[-1, :], dtype=np.float32)
+        imap = cube[-1, :]  # - np.mean(cube[-1, :], dtype=np.float32)
         cube = cube[:-1, :]
-
         fit_params = Parameters()
 
         for iarg in range(len(cube)):
@@ -85,6 +85,7 @@ class SimstackAlgorithm(SimstackSettings, Skymaps, Skycatalogs, SimstackResults)
             #print(parameter_label)
             fit_params.add(parameter_label, value=1e-3 * np.random.randn())
 
+        #pdb.set_trace()
         cov_ss_1d = minimize(self.simultaneous_stack_array_oned, fit_params,
                              args=(np.ndarray.flatten(cube),),
                              kws={'data1d': np.ndarray.flatten(imap), 'err1d': np.ndarray.flatten(ierr)})
@@ -110,12 +111,15 @@ class SimstackAlgorithm(SimstackSettings, Skymaps, Skycatalogs, SimstackResults)
         # Take the mean of the layers after they've been summed together
         model -= np.mean(model)
 
-        if err1d is None:
-            return (data1d - model)
+        return (data1d - model)
 
-        return (data1d - model) / err1d
+        #if (err1d is None) or 0 in err1d:
+        #    return (data1d - model)
 
-    def build_cube(self, map_dict, catalog, crop_circles=False):
+        #pdb.set_trace()
+        #return (data1d - model) / err1d
+
+    def build_cube(self, map_dict, catalog, crop_circles=False, write_fits_layers=False):
 
         cmap = map_dict['map']
         cnoise = map_dict['noise']
@@ -183,14 +187,23 @@ class SimstackAlgorithm(SimstackSettings, Skymaps, Skycatalogs, SimstackResults)
         for umap in range(nlayers):
             layer = layers[umap, :, :]
             tmap = smooth_psf(layer, kern)
-            # Uncommented following line.  Mistake?
-            #tmap[ind_fit] -= np.mean(tmap[ind_fit])
-            cfits_maps[umap, :] = tmap[ind_fit]
+            # write layers to fits files here
+            if write_fits_layers:
+                path_layer = r'D:\maps\cutouts\layers'
+                name_layer = 'uvista_layer_1-1p5_'+str(umap)+'.fits'
+                pdb.set_trace()
+                hdu = fits.PrimaryHDU(tmap, header=hd)
+                hdul = fits.HDUList([hdu])
+                hdul.writeto(os.path.join(path_layer, name_layer))
+
+            # Remove mean from map
+            cfits_maps[umap, :] = tmap[ind_fit] - np.mean(tmap[ind_fit])
 
         # put map and noisemap in last two layers
         cfits_maps[-2, :] = cmap[ind_fit]
         cfits_maps[-1, :] = cnoise[ind_fit]
 
+        #pdb.set_trace()
         return cfits_maps
 
     def get_x_y_from_ra_dec(self, wmap, cms, ind_src, ra_series, dec_series):
@@ -200,6 +213,7 @@ class SimstackAlgorithm(SimstackSettings, Skymaps, Skycatalogs, SimstackResults)
         # CONVERT FROM RA/DEC to X/Y
         # DANGER!!  NOTICE THAT I FLIP X AND Y HERE!!
         ty, tx = wmap.wcs_world2pix(ra, dec, 0)
+        #tx, ty = wmap.wcs_world2pix(ra, dec, 0)
         # CHECK FOR SOURCES THAT FALL OUTSIDE MAP
         ind_keep = np.where((tx >= 0) & (np.round(tx) < cms[0]) & (ty >= 0) & (np.round(ty) < cms[1]))
         real_x = np.round(tx[ind_keep]).astype(int)

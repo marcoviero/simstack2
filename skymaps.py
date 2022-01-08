@@ -6,7 +6,7 @@ from astropy.io import fits
 from utils import bin_ndarray as rebin_kernel
 from utils import gauss_kern
 from utils import clean_nans
-from utils import map_rms
+#from utils import map_rms
 
 class Skymaps:
 
@@ -67,30 +67,8 @@ class Skymaps:
 			pix = hd['CDELT2'] * 3600.
 
 		#READ BEAMS
-		#Check first if beam is a filename (actual beam) or a number (approximate with Gaussian)
-		if type(psf) is str:
-			beam, phd = fits.getdata(psf, 0, header=True)
-			#GET PSF PIXEL SIZE
-			if 'CD2_2' in phd:
-				pix_beam = phd['CD2_2'] * 3600.
-			elif 'CDELT2' in phd:
-				pix_beam = phd['CDELT2'] * 3600.
-			else: pix_beam = pix
-
-			#SCALE PSF IF NECESSARY
-			if np.round(10.*pix_beam) != np.round(10.*pix):
-				raise ValueError("Beam and Map have different size pixels")
-				scale_beam = pix_beam / pix
-				pms = np.shape(beam)
-				new_shape = (np.round(pms[0]*scale_beam), np.round(pms[1]*scale_beam))
-				kern = rebin_kernel(clean_nans(beam), new_shape=new_shape, operation='ave')
-			else:
-				kern = clean_nans(beam)
-			map_dict["psf_pixel_size"] = pix_beam
-		else:
-			fwhm = psf
-			#sig = fwhm / 2.355 / pix
-			kern = gauss_kern(psf, np.floor(fwhm * 8.)/pix, pix)
+		fwhm = psf
+		kern = gauss_kern(psf, np.floor(fwhm * 8.)/pix, pix)
 
 		map_dict["map"] = clean_nans(cmap) * color_correction
 		map_dict["noise"] = clean_nans(cnoise, replacement_char=1e10) * color_correction
@@ -100,7 +78,7 @@ class Skymaps:
 		map_dict["header"] = hd
 		map_dict["pixel_size"] = pix
 		map_dict["psf"] = clean_nans(kern)
-		map_dict["rms"] = map_rms(map_dict["map"].copy(), silent=True)
+		#map_dict["rms"] = map_rms(map_dict["map"].copy(), silent=True)
 
 		if wavelength != None:
 			map_dict["wavelength"] = wavelength
@@ -108,4 +86,5 @@ class Skymaps:
 		if fwhm != None:
 			map_dict["fwhm"] = fwhm
 
+		#pdb.set_trace()
 		return map_dict

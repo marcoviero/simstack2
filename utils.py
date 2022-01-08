@@ -170,7 +170,7 @@ def clean_arrays(x_array, y_array, z_array=None):
         return np.array(xout),np.array(yout)
 
 def clean_nans(dirty_array, replacement_char=0.0):
-  clean_array = dirty_array
+  clean_array = dirty_array.copy()
   clean_array[np.isnan(dirty_array)] = replacement_char
   clean_array[np.isinf(dirty_array)] = replacement_char
 
