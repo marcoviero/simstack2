@@ -29,11 +29,8 @@ To run from command line:
 import pdb
 import os
 import os.path
-import sys
-import shutil
 import time
 import logging
-import pickle
 
 # Modules within this package
 from simstack import SimstackWrapper
@@ -57,14 +54,11 @@ def main():
     # Begin Stacking
     simstack_object.perform_simstack()
 
+    # Rearrange results for plotting
     simstack_object.parse_results()
 
     # Save Results; they are stored in e.g., simstack_object.maps_dict['spire_plw']['stacked_flux_densities']
-    #save_stacked_fluxes(stacked_flux_densities, params, out_file_path, out_file_suffix, IDs=bin_ids)
-    # pdb.set_trace()
-
-    # Save Parameter file in folder
-    #save_paramfile(simstack_object.config_dict)
+    simstack_object.save_stacked_fluxes(param_file_path)
 
     # Summarize timing
     t1 = time.time()
@@ -73,10 +67,6 @@ def main():
     logging.info("Done!")
     logging.info("")
     logging.info("Total time                        : {:.4f} minutes\n".format(tpass / 60.))
-
-    # Find fluxes in e.g.,
-    # simstack_object.results_dict['spire_plw']['flux_density']
-    pdb.set_trace()
 
 if __name__ == "__main__":
     main()

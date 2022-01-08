@@ -4,16 +4,13 @@ import json
 import numpy as np
 from astropy.io import fits
 from astropy.wcs import WCS
-from utils import circle_mask
-from utils import gauss_kern
-from utils import smooth_psf
 from lmfit import Parameters, minimize, fit_report
 from skymaps import Skymaps
 from skycatalogs import Skycatalogs
-from simstacksettings import SimstackSettings
+from simstacktoolbox import SimstackToolbox
 from simstackresults import SimstackResults
 
-class SimstackAlgorithm(SimstackSettings, Skymaps, Skycatalogs, SimstackResults):
+class SimstackAlgorithm(SimstackToolbox, Skymaps, Skycatalogs, SimstackResults):
 
     stack_successful = False
 
@@ -175,7 +172,7 @@ class SimstackAlgorithm(SimstackSettings, Skymaps, Skycatalogs, SimstackResults)
         if crop_circles:
             radius = 1.1
             flattened_pixmap = np.sum(layers, axis=0)
-            total_circles_mask = circle_mask(flattened_pixmap, radius * fwhm, pix)
+            total_circles_mask = self.circle_mask(flattened_pixmap, radius * fwhm, pix)
             ind_fit = np.where(total_circles_mask >= 1)
         else:
             ind_fit = np.where(0 * np.sum(layers, axis=0) == 0)
@@ -183,10 +180,10 @@ class SimstackAlgorithm(SimstackSettings, Skymaps, Skycatalogs, SimstackResults)
         nhits = np.shape(ind_fit)[1]
         cfits_maps = np.zeros([nlayers + 2, nhits])
 
-        kern = gauss_kern(fwhm, np.floor(fwhm * 10) / pix, pix)
+        kern = self.gauss_kern(fwhm, np.floor(fwhm * 10) / pix, pix)
         for umap in range(nlayers):
             layer = layers[umap, :, :]
-            tmap = smooth_psf(layer, kern)
+            tmap = self.smooth_psf(layer, kern)
             # write layers to fits files here
             if write_fits_layers:
                 path_layer = r'D:\maps\cutouts\layers'

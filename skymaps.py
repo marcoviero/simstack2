@@ -3,10 +3,6 @@ import os
 import json
 import numpy as np
 from astropy.io import fits
-from utils import bin_ndarray as rebin_kernel
-from utils import gauss_kern
-from utils import clean_nans
-#from utils import map_rms
 
 class Skymaps:
 
@@ -38,7 +34,7 @@ class Skymaps:
 		file_map = self.parse_path(map_dict["path_map"])
 		file_noise = self.parse_path(map_dict["path_noise"])
 		wavelength = map_dict["wavelength"]
-		psf = map_dict["beam"]["fwhm"]
+		psf = map_dict["beam"]
 		beam_area = map_dict["beam"]["area"]
 		color_correction = map_dict["color_correction"]
 
@@ -67,18 +63,18 @@ class Skymaps:
 			pix = hd['CDELT2'] * 3600.
 
 		#READ BEAMS
-		fwhm = psf
-		kern = gauss_kern(psf, np.floor(fwhm * 8.)/pix, pix)
+		fwhm = psf["fwhm"]
+		kern = self.gauss_kern(fwhm, np.floor(fwhm * 8.)/pix, pix)
 
-		map_dict["map"] = clean_nans(cmap) * color_correction
-		map_dict["noise"] = clean_nans(cnoise, replacement_char=1e10) * color_correction
+		map_dict["map"] = self.clean_nans(cmap) * color_correction
+		map_dict["noise"] = self.clean_nans(cnoise, replacement_char=1e10) * color_correction
 		if beam_area != 1.0:
 			map_dict["map"] *= beam_area * 1e6
 			map_dict["noise"] *= beam_area * 1e6
 		map_dict["header"] = hd
 		map_dict["pixel_size"] = pix
-		map_dict["psf"] = clean_nans(kern)
-		#map_dict["rms"] = map_rms(map_dict["map"].copy(), silent=True)
+		map_dict["psf"] = self.clean_nans(kern)
+		#map_dict["rms"] = self.map_rms(map_dict["map"].copy())
 
 		if wavelength != None:
 			map_dict["wavelength"] = wavelength
