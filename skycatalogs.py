@@ -37,20 +37,23 @@ class Skycatalogs:
 
 		# By labels means unique values inside columns (e.g., "CLASS" = [0,1,2])
 		if 'labels' in split_type:
-			self.separate_by_label(split_dict)
+			self.separate_by_label(split_dict, self.catalog_dict['table'])
 
 		# By uvj means it splits into star-forming and quiescent galaxies via the u-v/v-j method.
 		if 'uvj' in split_type:
-			self.separate_sf_qt(split_dict)
+			self.separate_sf_qt(split_dict, self.catalog_dict['table'])
 
-	def separate_by_label(self, split_dict):
-		table = self.catalog_dict['table']
+	def separate_by_label(self, split_dict, table):
+		#table = self.catalog_dict['table']
 		self.parameter_names = {}
 		label_keys = list(split_dict.keys())
 		for key in label_keys:
 			if type(split_dict[key]['bins']) is str:
 				bins = json.loads(split_dict[key]['bins'])
 				self.parameter_names[key] = ["_".join([key, str(bins[i]), str(bins[i + 1])]) for i in range(len(bins[:-1]))]
+			elif type(split_dict[key]['bins']) is dict:
+				bins = len(split_dict[key]['bins'])
+				self.parameter_names[key] = ["_".join([key, str(i)]) for i in range(bins)]
 			else:
 				bins = split_dict[key]['bins']
 				self.parameter_names[key] = ["_".join([key, str(i)]) for i in range(bins)]
@@ -71,54 +74,26 @@ class Skycatalogs:
 				else:
 					pn = "__".join([ipar, jpar])
 					self.split_table['parameter_labels'].append(pn)
-		#pdb.set_trace()
+		pdb.set_trace()
 
-	def separate_sf_qt(self, split_dict):
-		table = self.catalog_dict['table']
+	def separate_sf_qt(self, split_dict, table):
+		#table = self.catalog_dict['table']
 
-		class_label = split_dict['uvj']["id"]
 		uvkey = split_dict['uvj']["bins"]['U-V']
 		vjkey = split_dict['uvj']["bins"]['V-J']
 		zkey = split_dict['redshift']["id"]
-		zbins = json.loads(split_dict['redshift']["bins"])
-		mkey = split_dict['stellar_mass']["id"]
-		mbins = json.loads(split_dict['stellar_mass']["bins"])
 
+		# Find quiescent galaxies using UVJ criteria
 		ind_zlt1 = (table[uvkey] > 1.3) & (table[vjkey] < 1.5) & (table[zkey] < 1) & \
 				   (table[uvkey] > (table[vjkey] * 0.88 + 0.69))
 		ind_zgt1 = (table[uvkey] > 1.3) & (table[vjkey] < 1.5) & (table[zkey] >= 1) & \
 				   (table[uvkey] > (table[vjkey] * 0.88 + 0.59))
 
+		# Add sfg column
 		sfg = np.ones(len(table))
 		sfg[ind_zlt1] = 0
 		sfg[ind_zgt1] = 0
+		class_label = split_dict['uvj']["id"]  # typically 'sfg', but can be anything.
 		table[class_label] = sfg
 
-		self.parameter_names = {}
-		label_keys = list(split_dict.keys())
-		for key in label_keys:
-			if type(split_dict[key]['bins']) is str:
-				bins = json.loads(split_dict[key]['bins'])
-				self.parameter_names[key] = ["_".join([key, str(bins[i]), str(bins[i + 1])]) for i in range(len(bins[:-1]))]
-			else:
-				bins = len(split_dict[key]['bins'])
-				self.parameter_names[key] = ["_".join([key, str(i)]) for i in range(bins)]
-			# Categorize using pandas.cut.  So good.
-			col = pd.cut(table[split_dict[key]['id']], bins=bins, labels=False)
-			col.name = key  # Rename column to label
-			# Add column to table
-			self.split_table['table'] = self.split_table['table'].join(col)
-
-		# Name Cube Layers (i.e., parameters)
-		self.split_table['parameter_labels'] = []
-		for ipar in self.parameter_names[label_keys[0]]:
-			for jpar in self.parameter_names[label_keys[1]]:
-				if len(label_keys) > 2:
-					for kpar in self.parameter_names[label_keys[2]]:
-						pn = "__".join([ipar, jpar, kpar])
-						self.split_table['parameter_labels'].append(pn)
-				else:
-					pn = "__".join([ipar, jpar])
-					self.split_table['parameter_labels'].append(pn)
-
-		self.split_table['table'] = self.split_table['table'].dropna()
+		self.separate_by_label(split_dict, table)

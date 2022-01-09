@@ -17,9 +17,9 @@ from astropy.wcs import WCS
 
 # Modules within this package
 from deleteme import parameters
-from simstack import stack_dictionaries_in_layers
-from simstack import stack_dictionaries_in_layers_w_background
-from simstack import is_true
+from simstackwrapper import stack_dictionaries_in_layers
+from simstackwrapper import stack_dictionaries_in_layers_w_background
+from simstackwrapper import is_true
 #from bootstrap import Bootstrap
 
 # Modules within Utils package

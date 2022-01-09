@@ -2,7 +2,7 @@
 
 '''
 
-Required Environment Variables
+Set Environment Variables
 
 export MAPSPATH=$MAPSPATH/Users/marcoviero/data/Astronomy/maps/
 export CATSPATH=$CATSPATH/Users/marcoviero/data/Astronomy/catalogs/
@@ -12,28 +12,29 @@ Setup New Virtual Environment
 > conda create -n simstack python=3.9
 > conda activate simstack
 
-Install Required Packages
-- matplotlib
-- pandas
-- astropy
-- lmfit
+Install Packages
+- matplotlib (> conda install matplotlib)
+- seaborn (> conda install seaborn)
+- numpy (> conda install numpy)
+- pandas (> conda install pandas)
+- astropy (> conda install astropy)
+- lmfit (> conda install -c conda-forge lmfit)
+- [jupyterlab, if you want to use notebooks]
 
 To run from command line:
-- First make executable (only needed once):
+- First make this file executable (only needed once), e.g.:
 > chmod +x run_simstack_cmd_line.py
 - Run script:
 > python run_simstack_cmd_line.py
 '''
 
 # Standard modules
-import pdb
 import os
-import os.path
 import time
 import logging
 
 # Modules within this package
-from simstack import SimstackWrapper
+from simstackwrapper import SimstackWrapper
 
 def main():
     # Set up logging
@@ -44,7 +45,7 @@ def main():
 
     # Get parameters from the provided parameter file
     #param_file_path = sys.argv[1]
-    param_file_path = os.path.join('examples','example.ini')#sys.argv[1]
+    param_file_path = os.path.join('examples', 'uvista.ini')
 
     # Instantiate SIMSTACK object
     simstack_object = SimstackWrapper(param_file_path)

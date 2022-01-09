@@ -1,21 +1,11 @@
-import pdb
 import numpy as np
-import gc
 import os
 import os.path
-import sys
 #import cPickle as pickle
 import pickle
-from astropy.wcs import WCS
 from astropy.cosmology import Planck15 as cosmo
-from astropy.cosmology import Planck15, z_at_value
 from deleteme import parameters
-from utils import circle_mask
-from utils import clean_args
-from utils import clean_nans
-from utils import gauss_kern
-from utils import smooth_psf
-from lmfit import Parameters, minimize, fit_report
+from deleteme.utils import clean_args
 
 pi = 3.141592653589793
 L_sun = 3.839e26  # W

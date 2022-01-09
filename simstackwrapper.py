@@ -6,13 +6,13 @@ class SimstackWrapper(SimstackAlgorithm):
         super().__init__(param_path_file)
 
         if read_catalog:
-            self.import_catalog()
+            self.import_catalog()  # This happens in skycatalogs
 
         if read_maps:
-            self.import_maps()
+            self.import_maps()  # This happens in skymaps
 
         if stack_automatically:
-            self.perform_simstack()
+            self.perform_simstack()  # This happens in simstackalgorithm
 
         if self.stack_successful:
-            self.parse_results()
+            self.parse_results()  # This happens in simstackresults
