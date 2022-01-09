@@ -21,9 +21,9 @@ class Skycatalogs:
 			print("Catalog not found: "+path_catalog)
 			pdb.set_trace()
 
-		self.split_table_by_populations()
+		self.split_table_into_populations()
 
-	def split_table_by_populations(self):
+	def split_table_into_populations(self):
 
 		# Make new table starting with RA and DEC
 		astrometry_keys = json.loads(self.config_dict['catalog']['astrometry'])
@@ -75,20 +75,50 @@ class Skycatalogs:
 
 	def separate_sf_qt(self, split_dict):
 		table = self.catalog_dict['table']
-		nsrc = len(table)
-		sfg = np.ones(nsrc)
 
-		zkey = json.loads(self.config_dict['catalog']['classification'])['redshift']["id"]
-		zbins = json.loads(json.loads(self.config_dict['catalog']['classification'])['redshift']["bins"])
-		mkey = json.loads(self.config_dict['catalog']['classification'])['stellar_mass']["id"]
-		mbins = json.loads(json.loads(self.config_dict['catalog']['classification'])['stellar_mass']["bins"])
+		class_label = split_dict['uvj']["id"]
+		uvkey = split_dict['uvj']["bins"]['U-V']
+		vjkey = split_dict['uvj']["bins"]['V-J']
+		zkey = split_dict['redshift']["id"]
+		zbins = json.loads(split_dict['redshift']["bins"])
+		mkey = split_dict['stellar_mass']["id"]
+		mbins = json.loads(split_dict['stellar_mass']["bins"])
 
-		#uvkey = self.config_dict['general']['classification']
-		pdb.set_trace()
-		for i in range(nsrc):
-			if (self.table[self.uvkey][i] > 1.3) and (self.table[self.vjkey][i] < 1.5):
-				if (self.table[self.zkey][i] < 1):
-					if (self.table[self.uvkey][i] > (self.table[self.vjkey][i] * 0.88 + 0.69)): sfg[i] = 0
-				if (self.table[self.zkey][i] > 1):
-					if (self.table[self.uvkey][i] > (self.table[self.vjkey][i] * 0.88 + 0.59)): sfg[i] = 0
-		return sfg
+		ind_zlt1 = (table[uvkey] > 1.3) & (table[vjkey] < 1.5) & (table[zkey] < 1) & \
+				   (table[uvkey] > (table[vjkey] * 0.88 + 0.69))
+		ind_zgt1 = (table[uvkey] > 1.3) & (table[vjkey] < 1.5) & (table[zkey] >= 1) & \
+				   (table[uvkey] > (table[vjkey] * 0.88 + 0.59))
+
+		sfg = np.ones(len(table))
+		sfg[ind_zlt1] = 0
+		sfg[ind_zgt1] = 0
+		table[class_label] = sfg
+
+		self.parameter_names = {}
+		label_keys = list(split_dict.keys())
+		for key in label_keys:
+			if type(split_dict[key]['bins']) is str:
+				bins = json.loads(split_dict[key]['bins'])
+				self.parameter_names[key] = ["_".join([key, str(bins[i]), str(bins[i + 1])]) for i in range(len(bins[:-1]))]
+			else:
+				bins = len(split_dict[key]['bins'])
+				self.parameter_names[key] = ["_".join([key, str(i)]) for i in range(bins)]
+			# Categorize using pandas.cut.  So good.
+			col = pd.cut(table[split_dict[key]['id']], bins=bins, labels=False)
+			col.name = key  # Rename column to label
+			# Add column to table
+			self.split_table['table'] = self.split_table['table'].join(col)
+
+		# Name Cube Layers (i.e., parameters)
+		self.split_table['parameter_labels'] = []
+		for ipar in self.parameter_names[label_keys[0]]:
+			for jpar in self.parameter_names[label_keys[1]]:
+				if len(label_keys) > 2:
+					for kpar in self.parameter_names[label_keys[2]]:
+						pn = "__".join([ipar, jpar, kpar])
+						self.split_table['parameter_labels'].append(pn)
+				else:
+					pn = "__".join([ipar, jpar])
+					self.split_table['parameter_labels'].append(pn)
+
+		self.split_table['table'] = self.split_table['table'].dropna()

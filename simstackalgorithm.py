@@ -31,7 +31,9 @@ class SimstackAlgorithm(SimstackToolbox, Skymaps, Skycatalogs, SimstackResults):
         for k in split_dict:
             kval = split_dict[k]['bins']
             if type(kval) is str:
-                nlists.append(len(json.loads(kval))-1) # bins so subtract 1
+                nlists.append(len(json.loads(kval))-1)  # bins so subtract 1
+            elif type(kval) is dict:
+                nlists.append(len(kval))
             else:
                 nlists.append(kval)
         nlayers = np.prod(nlists[1:])
