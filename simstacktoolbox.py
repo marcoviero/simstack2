@@ -178,6 +178,7 @@ class SimstackToolbox:
         fpath = "%s\\%s_%s" % (out_file_path, self.config_dict['io']['flux_densities_filename'],
                                self.config_dict['io']['shortname'])
         print('pickling to ' + fpath)
+        self.fpath=fpath
         pickle.dump(self, open(fpath, "wb"))  # , protocol=2 )
 
         # Copy Parameter File

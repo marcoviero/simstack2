@@ -118,7 +118,7 @@ class SimstackAlgorithm(SimstackToolbox, Skymaps, Skycatalogs, SimstackResults):
         #pdb.set_trace()
         #return (data1d - model) / err1d
 
-    def build_cube(self, map_dict, catalog, crop_circles=False, write_fits_layers=False):
+    def build_cube(self, map_dict, catalog, add_background=False, crop_circles=False, write_fits_layers=False):
 
         cmap = map_dict['map']
         cnoise = map_dict['noise']
@@ -180,7 +180,10 @@ class SimstackAlgorithm(SimstackToolbox, Skymaps, Skycatalogs, SimstackResults):
             ind_fit = np.where(0 * np.sum(layers, axis=0) == 0)
 
         nhits = np.shape(ind_fit)[1]
-        cfits_maps = np.zeros([nlayers + 2, nhits])
+        if add_background:
+            cfits_maps = np.zeros([nlayers + 3, nhits])  # +3 to append background, cmap and cnoise
+        else:
+            cfits_maps = np.zeros([nlayers + 2, nhits])  # +2 to append cmap and cnoise
 
         kern = self.gauss_kern(fwhm, np.floor(fwhm * 10) / pix, pix)
         for umap in range(nlayers):
@@ -198,6 +201,8 @@ class SimstackAlgorithm(SimstackToolbox, Skymaps, Skycatalogs, SimstackResults):
             # Remove mean from map
             cfits_maps[umap, :] = tmap[ind_fit] - np.mean(tmap[ind_fit])
 
+        if add_background:
+            cfits_maps[-3, :] = np.ones(np.shape(cmap[ind_fit]))
         # put map and noisemap in last two layers
         cfits_maps[-2, :] = cmap[ind_fit]
         cfits_maps[-1, :] = cnoise[ind_fit]

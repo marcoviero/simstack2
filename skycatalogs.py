@@ -43,7 +43,7 @@ class Skycatalogs:
 		if 'uvj' in split_type:
 			self.separate_sf_qt(split_dict, self.catalog_dict['table'])
 
-	def separate_by_label(self, split_dict, table):
+	def separate_by_label(self, split_dict, table, add_background=False):
 		#table = self.catalog_dict['table']
 		self.parameter_names = {}
 		label_keys = list(split_dict.keys())
@@ -74,7 +74,9 @@ class Skycatalogs:
 				else:
 					pn = "__".join([ipar, jpar])
 					self.split_table['parameter_labels'].append(pn)
-		pdb.set_trace()
+		if add_background:
+			self.split_table['parameter_labels'].append('background_layer')
+		#pdb.set_trace()
 
 	def separate_sf_qt(self, split_dict, table):
 		#table = self.catalog_dict['table']

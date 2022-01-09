@@ -65,7 +65,8 @@ def main():
     t1 = time.time()
     tpass = t1 - t0
 
-    logging.info("Done!")
+    logging.info("Stacking Successful!")
+    logging.info("Find Results {}".format(simstack_object.fpath))
     logging.info("")
     logging.info("Total time                        : {:.4f} minutes\n".format(tpass / 60.))
 
