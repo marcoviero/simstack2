@@ -154,19 +154,32 @@ class SimstackToolbox:
         return rms_1sig
 
     def parse_path(self, path_in):
-        path_in = path_in.split(" ")
         #print(path_in)
-        #pdb.set_trace()
+        path_in = path_in.split(" ")
         if len(path_in) == 1:
             return path_in[0]
         else:
-            #return os.path.join(os.environ[path_in[0]], path_in[1])
-            return os.environ[path_in[0]] + path_in[1]
+            path_env = os.environ[path_in[0]]
+            if len(path_in) == 2:
+                if 'nt' in os.name:
+                    return path_env + os.path.join('\\', path_in[1].replace('/', '\\'))
+                else:
+                    return path_env + os.path.join('/', path_in[1])
+            else:
+                if 'nt' in os.name:
+                    path_rename = [i.replace('/', '\\') for i in path_in[1:]]
+                    return path_env + os.path.join('\\', *path_rename)
+                else:
+                    return path_env + os.path.join('/', *path_in[1:])
 
     def save_stacked_fluxes(self, fp_in, append_to_existing=False):
-        output_string = self.config_dict['io']['output_folder'].split(' ')
-        out_file_path = os.path.join(os.environ[output_string[0]], "/".join(output_string[1:]),
-                                     self.config_dict['io']['shortname'])
+        if 'shortname' in self.config_dict['io']:
+            shortname = self.config_dict['io']['shortname']
+        else:
+            shortname = os.path.basename(fp_in).split('.')[0]
+
+        out_file_path = os.path.join(self.parse_path(self.config_dict['io']['output_folder']),
+                                     shortname)
         if not os.path.exists(out_file_path):
             os.makedirs(out_file_path)
         else:
@@ -175,20 +188,20 @@ class SimstackToolbox:
                     out_file_path = out_file_path + "_"
                 os.makedirs(out_file_path)
 
-        fpath = "%s\\%s_%s" % (out_file_path, self.config_dict['io']['flux_densities_filename'],
-                               self.config_dict['io']['shortname'])
+        fpath = os.path.join(out_file_path, shortname + '.pkl')
+
         print('pickling to ' + fpath)
         self.fpath=fpath
-        pickle.dump(self, open(fpath, "wb"))  # , protocol=2 )
+        with open(fpath, "wb") as pickle_file_path:
+            pickle.dump(self, pickle_file_path)
 
         # Copy Parameter File
-        fname = os.path.basename(fp_in)
-        fp_out = os.path.join(out_file_path, fname)
+        fp_name = os.path.basename(fp_in)
+        fp_out = os.path.join(out_file_path, fp_name)
         logging.info("Copying parameter file...")
         logging.info("  FROM : {}".format(fp_in))
         logging.info("    TO : {}".format(fp_out))
         logging.info("")
-
         shutil.copyfile(fp_in, fp_out)
 
     def get_params_dict(self, param_file_path):

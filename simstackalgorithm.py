@@ -112,11 +112,12 @@ class SimstackAlgorithm(SimstackToolbox, Skymaps, Skycatalogs, SimstackResults):
 
         return (data1d - model)
 
-        #if (err1d is None) or 0 in err1d:
-        #    return (data1d - model)
-
-        #pdb.set_trace()
-        #return (data1d - model) / err1d
+        # Does not work anymore, whats up?
+        if (err1d is None) or 0 in err1d:
+            return (data1d - model)
+        else:
+            return (data1d - model)**2 / err1d**2
+            #pdb.set_trace()
 
     def build_cube(self, map_dict, catalog, add_background=False, crop_circles=False, write_fits_layers=False):
 
@@ -192,7 +193,7 @@ class SimstackAlgorithm(SimstackToolbox, Skymaps, Skycatalogs, SimstackResults):
             # write layers to fits files here
             if write_fits_layers:
                 path_layer = r'D:\maps\cutouts\layers'
-                name_layer = 'uvista_layer_1-1p5_'+str(umap)+'.fits'
+                name_layer = 'layer_'+str(umap)+'.fits'
                 pdb.set_trace()
                 hdu = fits.PrimaryHDU(tmap, header=hd)
                 hdul = fits.HDUList([hdu])
@@ -201,13 +202,13 @@ class SimstackAlgorithm(SimstackToolbox, Skymaps, Skycatalogs, SimstackResults):
             # Remove mean from map
             cfits_maps[umap, :] = tmap[ind_fit] - np.mean(tmap[ind_fit])
 
+        # If add_background=True, add background layer of ones.
         if add_background:
             cfits_maps[-3, :] = np.ones(np.shape(cmap[ind_fit]))
         # put map and noisemap in last two layers
         cfits_maps[-2, :] = cmap[ind_fit]
         cfits_maps[-1, :] = cnoise[ind_fit]
 
-        #pdb.set_trace()
         return cfits_maps
 
     def get_x_y_from_ra_dec(self, wmap, cms, ind_src, ra_series, dec_series):
@@ -215,9 +216,7 @@ class SimstackAlgorithm(SimstackToolbox, Skymaps, Skycatalogs, SimstackResults):
         ra = ra_series[ind_src].values
         dec = dec_series[ind_src].values
         # CONVERT FROM RA/DEC to X/Y
-        # DANGER!!  NOTICE THAT I FLIP X AND Y HERE!!
         ty, tx = wmap.wcs_world2pix(ra, dec, 0)
-        #tx, ty = wmap.wcs_world2pix(ra, dec, 0)
         # CHECK FOR SOURCES THAT FALL OUTSIDE MAP
         ind_keep = np.where((tx >= 0) & (np.round(tx) < cms[0]) & (ty >= 0) & (np.round(ty) < cms[1]))
         real_x = np.round(tx[ind_keep]).astype(int)
