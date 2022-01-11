@@ -26,10 +26,29 @@ To run from command line:
 > chmod +x run_simstack_cmd_line.py
 - Run script:
 > python run_simstack_cmd_line.py
+
+Returned object contains:
+- simstack_object.config_dict; dict_keys(['general', 'cosmology', 'io', 'catalog', 'maps'])
+- simstack_object.catalog_dict; dict_keys(['table'])
+- simstack_object.maps_dict; dict_keys(['spire_psw', 'spire_pmw', ...])
+- simstack_object.results_dict; dict_keys(['spire_plw', 'wavelengths']) # change to results, metadata
+- simstack_object.parameter_names; dict_keys(['redshift', 'stellar_mass', 'uvj']) # should move this to results metadata
+- simstack_object.fpath # Path to results.  Also move this into results metadata
+
+Internal methods (i.e., functions) include:
+- import_catalog
+- import_maps
+- import_pickles
+
+Keyword arguments include:
+- Estimate Extragalactic Background Light (EBL)
+- Estimate Temperatures
+- Estimate Bayesian uncertainties via. MCMC
 '''
 
 # Standard modules
 import os
+import pdb
 import time
 import logging
 
@@ -70,6 +89,7 @@ def main():
     logging.info("")
     logging.info("Total time                        : {:.4f} minutes\n".format(tpass / 60.))
 
+    pdb.set_trace()
 if __name__ == "__main__":
     main()
 else:

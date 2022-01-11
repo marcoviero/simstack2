@@ -25,10 +25,10 @@ class Skymaps:
 		for imap in self.config_dict['maps']:
 			map_params = json.loads(self.config_dict['maps'][imap])
 			if json.loads(map_params["stack"].lower()):
-				map_dict = self.import_map(map_params)
+				map_dict = self.import_map_dict(map_params)
 				self.maps_dict[imap] = map_dict
 
-	def import_map(self, map_dict):
+	def import_map_dict(self, map_dict):
 		#READ MAPS
 
 		file_map = self.parse_path(map_dict["path_map"])
