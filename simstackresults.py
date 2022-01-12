@@ -20,6 +20,9 @@ class SimstackResults:
 		label_keys = list(split_dict.keys())
 		label_dict = self.parameter_names
 		ds = [len(label_dict[k]) for k in label_dict]
+		pdb.set_trace()
+		sed_array = {'flux_density': np.zeros([len(wavelength_keys), *ds]),
+					 'uncertainty': np.zeros([len(wavelength_keys), *ds]) }
 
 		for k, key in enumerate(wavelength_keys):
 			self.results_dict[key] = {}
@@ -40,6 +43,7 @@ class SimstackResults:
 							#print(label)
 							flux_array[z, i, j] = results_object[zval].params[label].value
 							error_array[z, i, j] = results_object[zval].params[label].stderr
+							#sed_array['flux_density'][k, z, i, j] = flux_array[z, i, j]
 							#pdb.set_trace()
 					else:
 						label = "__".join([zval, ival]).replace('.', 'p')
@@ -106,6 +110,8 @@ class SimstackResults:
 			self.results_dict[key][label_keys[1]] = m_dict
 
 		self.results_dict['wavelengths'] = wavelengths
+
+
 		#pdb.set_trace()
 
 

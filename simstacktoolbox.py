@@ -172,6 +172,10 @@ class SimstackToolbox:
                 else:
                     return path_env + os.path.join('/', *path_in[1:])
 
+    def import_saved_pickles(self, pickle_fn):
+        with open(pickle_fn, "rb") as file_path:
+            encoding = pickle.load(file_path)
+
     def save_stacked_fluxes(self, fp_in, append_to_existing=False):
         if 'shortname' in self.config_dict['io']:
             shortname = self.config_dict['io']['shortname']

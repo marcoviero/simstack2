@@ -69,8 +69,13 @@ class Skycatalogs:
 			for jpar in self.parameter_names[label_keys[1]]:
 				if len(label_keys) > 2:
 					for kpar in self.parameter_names[label_keys[2]]:
-						pn = "__".join([ipar, jpar, kpar])
-						self.split_table['parameter_labels'].append(pn)
+						if len(label_keys) > 3:
+							for lpar in self.parameter_names[label_keys[3]]:
+								pn = "__".join([ipar, jpar, kpar, lpar])
+								self.split_table['parameter_labels'].append(pn)
+						else:
+							pn = "__".join([ipar, jpar, kpar])
+							self.split_table['parameter_labels'].append(pn)
 				else:
 					pn = "__".join([ipar, jpar])
 					self.split_table['parameter_labels'].append(pn)

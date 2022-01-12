@@ -19,6 +19,8 @@ class SimstackAlgorithm(SimstackToolbox, Skymaps, Skycatalogs, SimstackResults):
 
     def perform_simstack(self):
 
+        add_background = False
+
         # Get catalog.  Clean NaNs
         catalog = self.split_table['table'].dropna()
 
@@ -47,18 +49,21 @@ class SimstackAlgorithm(SimstackToolbox, Skymaps, Skycatalogs, SimstackResults):
                 name = "_".join(["redshift", str(bins[int(i)]), str(bins[int(i) + 1])]).replace('.', 'p')
                 labels = self.split_table['parameter_labels'][int(i*nlayers):int((i+1)*nlayers)]
                 #print(labels)
-                self.stack_in_wavelengths(catalog_in, labels=labels, distance_interval=name)
+                if add_background:
+                    labels.append("background")
+                self.stack_in_wavelengths(catalog_in, labels=labels, distance_interval=name, add_background=add_background)
         else:
-            self.stack_in_wavelengths(catalog, distance_interval='all_redshifts')
+            self.stack_in_wavelengths(catalog, distance_interval='all_redshifts', add_background=add_background)
 
+        #pdb.set_trace()
         self.stack_successful = True
 
-    def stack_in_wavelengths(self, catalog, labels=None, distance_interval=None, crop_circles=False):
+    def stack_in_wavelengths(self, catalog, labels=None, distance_interval=None, crop_circles=False, add_background=False):
 
         map_keys = list(self.maps_dict.keys())
         for wv in map_keys:
             map_dict = self.maps_dict[wv]
-            cube = self.build_cube(map_dict, catalog.copy(), crop_circles=crop_circles)
+            cube = self.build_cube(map_dict, catalog.copy(), crop_circles=crop_circles, add_background=add_background)
             cov_ss_1d = self.regress_cube_layers(cube, labels=labels)
             if 'stacked_flux_densities' not in self.maps_dict[wv]:
                 self.maps_dict[wv]['stacked_flux_densities'] = {distance_interval: cov_ss_1d}
@@ -113,11 +118,10 @@ class SimstackAlgorithm(SimstackToolbox, Skymaps, Skycatalogs, SimstackResults):
         return (data1d - model)
 
         # Does not work anymore, whats up?
-        if (err1d is None) or 0 in err1d:
-            return (data1d - model)
-        else:
-            return (data1d - model)**2 / err1d**2
-            #pdb.set_trace()
+        #if (err1d is None) or 0 in err1d:
+        #    return (data1d - model)
+        #else:
+        #    return (data1d - model)**2 / err1d**2
 
     def build_cube(self, map_dict, catalog, add_background=False, crop_circles=False, write_fits_layers=False):
 
@@ -140,7 +144,8 @@ class SimstackAlgorithm(SimstackToolbox, Skymaps, Skycatalogs, SimstackResults):
         for k in keys:
             nlists.append(len(np.unique(catalog[k])))
         nlayers = np.prod(nlists)
-        print("Number of Layers Stacking Simultaneously = {}".format(nlayers))
+
+        print("Number of Layers Stacking Simultaneously = {}".format(nlayers+np.sum(add_background)))
 
         if np.sum(cnoise) == 0: cnoise = cmap * 0.0 + 1.0
 
