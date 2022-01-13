@@ -41,15 +41,21 @@ class SimstackResults:
 						for j, jval in enumerate(label_dict[label_keys[2]]):
 							label = "__".join([zval, ival, jval]).replace('.', 'p')
 							#print(label)
-							flux_array[z, i, j] = results_object[zval].params[label].value
-							error_array[z, i, j] = results_object[zval].params[label].stderr
-							#sed_array['flux_density'][k, z, i, j] = flux_array[z, i, j]
-							#pdb.set_trace()
+							# CHECK THAT LABEL EXISTS FIRST
+							if label in results_object[zval].params:
+								flux_array[z, i, j] = results_object[zval].params[label].value
+								error_array[z, i, j] = results_object[zval].params[label].stderr
+								#sed_array['flux_density'][k, z, i, j] = flux_array[z, i, j]
+							else:
+								print(label, ' does not exist')
 					else:
 						label = "__".join([zval, ival]).replace('.', 'p')
 						#print(label)
-						flux_array[z, i] = results_object[zval].params[label].value
-						error_array[z, i] = results_object[zval].params[label].stderr
+						if label in results_object[zval].params:
+							flux_array[z, i] = results_object[zval].params[label].value
+							error_array[z, i] = results_object[zval].params[label].stderr
+						else:
+							print(label, ' does not exist')
 
 			z_bins = [i.replace('p', '.').split('_')[1:] for i in z_label]
 			z_mid = [(float(i[0]) + float(i[1]))/2 for i in z_bins]

@@ -50,7 +50,8 @@ class SimstackAlgorithm(SimstackToolbox, Skymaps, Skycatalogs, SimstackResults):
                 labels = self.split_table['parameter_labels'][int(i*nlayers):int((i+1)*nlayers)]
                 #print(labels)
                 if add_background:
-                    labels.append("background")
+                    labels.append("ones_background")
+                #pdb.set_trace()
                 self.stack_in_wavelengths(catalog_in, labels=labels, distance_interval=name, add_background=add_background)
         else:
             self.stack_in_wavelengths(catalog, distance_interval='all_redshifts', add_background=add_background)
@@ -80,20 +81,29 @@ class SimstackAlgorithm(SimstackToolbox, Skymaps, Skycatalogs, SimstackResults):
         cube = cube[:-1, :]
         fit_params = Parameters()
 
-        for iarg in range(len(cube)):
-            if not labels:
-                parameter_label = self.split_table['parameter_labels'][iarg].replace('.', 'p')
+        # Step backward through cube so removal of rows does not affect order
+        for iarg in range(len(cube))[::-1]:
+            # Remove empty layers
+            if np.sum(abs(cube[iarg, :])) > 0:
+                if not labels:
+                    parameter_label = self.split_table['parameter_labels'][iarg].replace('.', 'p')
+                else:
+                    parameter_label = labels[iarg].replace('.', 'p')
+
+                fit_params.add(parameter_label, value=1e-3 * np.random.randn())
+
             else:
-                parameter_label = labels[iarg].replace('.', 'p')
+                # Remove layer from cube and don't add to fit_params
+                cube = np.delete(cube, iarg, 0)
+                pass
 
-            #print(parameter_label)
-            fit_params.add(parameter_label, value=1e-3 * np.random.randn())
-
-        #pdb.set_trace()
+        nlayers = len(fit_params)
+        print("Number of Layers Stacking Simultaneously = {}".format(nlayers))
         cov_ss_1d = minimize(self.simultaneous_stack_array_oned, fit_params,
                              args=(np.ndarray.flatten(cube),),
                              kws={'data1d': np.ndarray.flatten(imap), 'err1d': np.ndarray.flatten(ierr)})
 
+        #pdb.set_trace()
         return cov_ss_1d
 
     def simultaneous_stack_array_oned(self, p, layers_1d, data1d, err1d=None, arg_order=None):
@@ -145,7 +155,7 @@ class SimstackAlgorithm(SimstackToolbox, Skymaps, Skycatalogs, SimstackResults):
             nlists.append(len(np.unique(catalog[k])))
         nlayers = np.prod(nlists)
 
-        print("Number of Layers Stacking Simultaneously = {}".format(nlayers+np.sum(add_background)))
+        #print("Number of Layers Stacking Simultaneously = {}".format(nlayers+np.sum(add_background)))
 
         if np.sum(cnoise) == 0: cnoise = cmap * 0.0 + 1.0
 
