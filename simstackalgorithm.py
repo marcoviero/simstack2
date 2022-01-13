@@ -19,7 +19,7 @@ class SimstackAlgorithm(SimstackToolbox, Skymaps, Skycatalogs, SimstackResults):
 
     def perform_simstack(self):
 
-        add_background = False
+        add_background = True
 
         # Get catalog.  Clean NaNs
         catalog = self.split_table['table'].dropna()
@@ -79,9 +79,10 @@ class SimstackAlgorithm(SimstackToolbox, Skymaps, Skycatalogs, SimstackResults):
         # Subtract mean from map
         imap = cube[-1, :]  # - np.mean(cube[-1, :], dtype=np.float32)
         cube = cube[:-1, :]
-        fit_params = Parameters()
+
 
         # Step backward through cube so removal of rows does not affect order
+        non_zero_parameter_labels = []
         for iarg in range(len(cube))[::-1]:
             # Remove empty layers
             if np.sum(abs(cube[iarg, :])) > 0:
@@ -89,16 +90,21 @@ class SimstackAlgorithm(SimstackToolbox, Skymaps, Skycatalogs, SimstackResults):
                     parameter_label = self.split_table['parameter_labels'][iarg].replace('.', 'p')
                 else:
                     parameter_label = labels[iarg].replace('.', 'p')
-
-                fit_params.add(parameter_label, value=1e-3 * np.random.randn())
-
+                # Add parameter_label to non_zero_parameter_labels
+                non_zero_parameter_labels.append(parameter_label)
             else:
-                # Remove layer from cube and don't add to fit_params
+                # Remove empty layer from cube, and don't add to non_zero_parameter_labels
                 cube = np.delete(cube, iarg, 0)
                 pass
 
+        # Add non-empty Parameters to fit_params in right order
+        fit_params = Parameters()
+        for iparam in non_zero_parameter_labels[::-1]:
+            fit_params.add(iparam, value=1e-3 * np.random.randn())
+
         nlayers = len(fit_params)
         print("Number of Layers Stacking Simultaneously = {}".format(nlayers))
+        #pdb.set_trace()
         cov_ss_1d = minimize(self.simultaneous_stack_array_oned, fit_params,
                              args=(np.ndarray.flatten(cube),),
                              kws={'data1d': np.ndarray.flatten(imap), 'err1d': np.ndarray.flatten(ierr)})
