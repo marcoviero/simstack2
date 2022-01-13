@@ -20,9 +20,9 @@ class SimstackResults:
 		label_keys = list(split_dict.keys())
 		label_dict = self.parameter_names
 		ds = [len(label_dict[k]) for k in label_dict]
-		pdb.set_trace()
-		sed_array = {'flux_density': np.zeros([len(wavelength_keys), *ds]),
-					 'uncertainty': np.zeros([len(wavelength_keys), *ds]) }
+		#pdb.set_trace()
+		#sed_array = {'flux_density': np.zeros([len(wavelength_keys), *ds]),
+		#			 'uncertainty': np.zeros([len(wavelength_keys), *ds]) }
 
 		for k, key in enumerate(wavelength_keys):
 			self.results_dict[key] = {}

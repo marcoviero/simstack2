@@ -103,4 +103,5 @@ class Skycatalogs:
 		class_label = split_dict['uvj']["id"]  # typically 'sfg', but can be anything.
 		table[class_label] = sfg
 
+		#pdb.set_trace()
 		self.separate_by_label(split_dict, table)

@@ -63,7 +63,7 @@ class SimstackAlgorithm(SimstackToolbox, Skymaps, Skycatalogs, SimstackResults):
         map_keys = list(self.maps_dict.keys())
         for wv in map_keys:
             map_dict = self.maps_dict[wv]
-            cube = self.build_cube(map_dict, catalog.copy(), crop_circles=crop_circles, add_background=add_background)
+            cube = self.build_cube(map_dict, catalog.copy(), labels=labels, crop_circles=crop_circles, add_background=add_background)
             cov_ss_1d = self.regress_cube_layers(cube, labels=labels)
             if 'stacked_flux_densities' not in self.maps_dict[wv]:
                 self.maps_dict[wv]['stacked_flux_densities'] = {distance_interval: cov_ss_1d}
@@ -123,7 +123,7 @@ class SimstackAlgorithm(SimstackToolbox, Skymaps, Skycatalogs, SimstackResults):
         #else:
         #    return (data1d - model)**2 / err1d**2
 
-    def build_cube(self, map_dict, catalog, add_background=False, crop_circles=False, write_fits_layers=False):
+    def build_cube(self, map_dict, catalog, labels=None, add_background=False, crop_circles=False, write_fits_layers=False):
 
         cmap = map_dict['map']
         cnoise = map_dict['noise']

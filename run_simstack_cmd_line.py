@@ -64,7 +64,7 @@ def main():
 
     # Get parameters from the provided parameter file
     #param_file_path = sys.argv[1]
-    param_file_path = os.path.join('examples', 'uvista.ini')
+    param_file_path = os.path.join('examples', 'cosmos2020.ini')
 
     # Instantiate SIMSTACK object
     simstack_object = SimstackWrapper(param_file_path)
