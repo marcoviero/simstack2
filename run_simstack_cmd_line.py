@@ -67,7 +67,7 @@ def main():
     param_file_path = os.path.join('examples', 'cosmos2020.ini')
 
     # Instantiate SIMSTACK object
-    simstack_object = SimstackWrapper(param_file_path)
+    simstack_object = SimstackWrapper(param_file_path, read_maps=True, read_catalog=True)
 
     t0 = time.time()
 

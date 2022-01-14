@@ -15,7 +15,7 @@ class SimstackWrapper(SimstackAlgorithm):
         :param read_catalogs: (bool) [optional; default True] If prefer to do this manually then set False
         :param stack_automatically: (bool) [optional; default False] If prefer to do this automatically then set True
     '''
-    def __init__(self, param_path_file, read_maps=True, read_catalog=True, stack_automatically=False):
+    def __init__(self, param_path_file, read_maps=False, read_catalog=False, stack_automatically=False):
         super().__init__(param_path_file)
 
         if read_catalog:

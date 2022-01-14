@@ -4,14 +4,19 @@ import json
 import numpy as np
 import pandas as pd
 
-class SimstackResults:
+class SimstackResults():
 
 	results_dict = {}
 
 	def __init__(self):
-		pass
+		super().__init__()
 
-	def parse_results(self):
+	def import_saved_results(self, pickle_file):
+
+		tst = self.import_saved_pickles(pickle_file)
+		pdb.set_trace()
+
+	def parse_results(self, beta_rj=1.8):
 
 		wavelength_keys = list(self.maps_dict.keys())
 		wavelengths = []
@@ -20,10 +25,9 @@ class SimstackResults:
 		label_keys = list(split_dict.keys())
 		label_dict = self.parameter_names
 		ds = [len(label_dict[k]) for k in label_dict]
-		#pdb.set_trace()
-		#sed_array = {'flux_density': np.zeros([len(wavelength_keys), *ds]),
-		#			 'uncertainty': np.zeros([len(wavelength_keys), *ds]) }
 
+		sed_flux_array = np.zeros([len(wavelength_keys), *ds])
+		sed_error_array = np.zeros([len(wavelength_keys), *ds])
 		for k, key in enumerate(wavelength_keys):
 			self.results_dict[key] = {}
 			self.results_dict[key]['wavelength'] = self.maps_dict[key]['wavelength']
@@ -112,11 +116,34 @@ class SimstackResults:
 					m_dict['std_error'][ival] = error_array[:, i]
 					#m_dict[ival] = {"flux_density": flux_array[:, i], "std_error": error_array[:, i]}
 
+			#wv_dict
+
 			self.results_dict[key][label_keys[0]] = z_dict
 			self.results_dict[key][label_keys[1]] = m_dict
 
+			sed_flux_array[k, :, :] = flux_array
+			sed_error_array[k, :, :] = error_array
+
+		# Store Wavelengths
 		self.results_dict['wavelengths'] = wavelengths
 
+		# Organize into SEDs
+		self.results_dict['SED_df'] = {'flux_density': {}, 'std_error': {}, 'temperature': {}, 'LIR': {}}
+		for z, zlab in enumerate(label_dict[label_keys[0]]):
+			if len(label_keys) > 2:
+				for j, jlab in enumerate(label_dict[label_keys[2]]):
+					if zlab not in self.results_dict['SED_df']['flux_density']:
+						self.results_dict['SED_df']['flux_density'][zlab] = {}
+						self.results_dict['SED_df']['std_error'][zlab] = {}
+					self.results_dict['SED_df']['flux_density'][zlab][jlab] =\
+						pd.DataFrame(sed_flux_array[:, z, :, j], index=wavelengths, columns=label_dict[label_keys[1]])
+					self.results_dict['SED_df']['std_error'][zlab][jlab] = \
+						pd.DataFrame(sed_error_array[:, z, :, j], index=wavelengths, columns=label_dict[label_keys[1]])
+			else:
+				self.results_dict['SED_df']['flux_density'][zlab] = \
+					pd.DataFrame(sed_flux_array[:, z, :], index=wavelengths, columns=label_dict[label_keys[1]])
+				self.results_dict['SED_df']['std_error'][zlab] = \
+					pd.DataFrame(sed_error_array[:, z, :], index=wavelengths, columns=label_dict[label_keys[1]])
 
 		#pdb.set_trace()
 

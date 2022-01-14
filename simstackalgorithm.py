@@ -19,7 +19,7 @@ class SimstackAlgorithm(SimstackToolbox, Skymaps, Skycatalogs, SimstackResults):
 
     def perform_simstack(self):
 
-        add_background = True
+        add_background = False
 
         # Get catalog.  Clean NaNs
         catalog = self.split_table['table'].dropna()

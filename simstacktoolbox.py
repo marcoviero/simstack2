@@ -5,6 +5,7 @@ import logging
 import pickle
 import numpy as np
 from configparser import ConfigParser
+from lmfit import Parameters, minimize, fit_report
 from scipy.ndimage.filters import gaussian_filter
 from scipy.optimize import curve_fit
 
@@ -15,6 +16,61 @@ class SimstackToolbox:
     def __init__(self, param_file_path):
 
         self.config_dict = self.get_params_dict(param_file_path)
+
+    def fast_sed_fitter(self, wavelengths, fluxes, covar, betain=1.8):
+        fit_params = Parameters()
+        fit_params.add('A', value=1e-32, vary=True)
+        fit_params.add('T_observed', value=24.0, vary=True, min=0.1)
+        fit_params.add('beta', value=betain, vary=False)
+        fit_params.add('alpha', value=2.0, vary=False)
+
+        # nu_in = c * 1.e6 / wavelengths
+
+        sed_params = minimize(self.find_sed_min, fit_params,
+                              args=(np.ndarray.flatten(wavelengths),),
+                              kws={'fluxes': fluxes, 'covar': covar})
+
+        m = sed_params.params
+        # m = sed_params
+
+        return m
+
+    def find_sed_min(self, p, wavelengths, fluxes, covar=None):
+
+        graybody = self.fast_sed(p, wavelengths)
+        # print p['T_observed']
+        # print fluxes - graybody
+        if covar == None:
+            return (fluxes - graybody)
+        else:
+            return (fluxes - graybody) / covar
+
+
+    def fast_sed(self, m, wavelengths):
+        nu_in = c * 1.e6 / wavelengths
+
+        v = m.valuesdict()
+        A = np.asarray(v['A'])
+        T = np.asarray(v['T_observed'])
+        betain = np.asarray(v['beta'])
+        alphain = np.asarray(v['alpha'])
+        ng = np.size(A)
+
+        ns = len(nu_in)
+        base = 2.0 * (6.626) ** (-2.0 - betain - alphain) * (1.38) ** (3. + betain + alphain) / (2.99792458) ** 2.0
+        expo = 34.0 * (2.0 + betain + alphain) - 23.0 * (3.0 + betain + alphain) - 16.0 + 26.0
+        K = base * 10.0 ** expo
+        w_num = A * K * (T * (3.0 + betain + alphain)) ** (3.0 + betain + alphain)
+        w_den = (np.exp(3.0 + betain + alphain) - 1.0)
+        w_div = w_num / w_den
+        nu_cut = (3.0 + betain + alphain) * 0.208367e11 * T
+
+        graybody = np.reshape(A, (ng, 1)) * nu_in ** np.reshape(betain, (ng, 1)) * black(nu_in, T) / 1000.0
+        powerlaw = np.reshape(w_div, (ng, 1)) * nu_in ** np.reshape(-1.0 * alphain, (ng, 1))
+        graybody[np.where(nu_in >= np.reshape(nu_cut, (ng, 1)))] = powerlaw[
+            np.where(nu_in >= np.reshape(nu_cut, (ng, 1)))]
+
+        return graybody
 
     def clean_nans(self, dirty_array, replacement_char=0.0):
         clean_array = dirty_array.copy()
@@ -175,6 +231,7 @@ class SimstackToolbox:
     def import_saved_pickles(self, pickle_fn):
         with open(pickle_fn, "rb") as file_path:
             encoding = pickle.load(file_path)
+        return encoding
 
     def save_stacked_fluxes(self, fp_in, append_to_existing=False):
         if 'shortname' in self.config_dict['io']:
