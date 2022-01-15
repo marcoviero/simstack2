@@ -50,10 +50,8 @@ class SimstackAlgorithm(SimstackToolbox, SimstackResults, Skymaps, Skycatalogs):
                 distance_label = "_".join(["redshift", str(bins[int(i)]), str(bins[int(i) + 1])]).replace('.', 'p')
                 distance_labels.append(distance_label)
                 labels = self.split_table['parameter_labels'][int(i*nlayers):int((i+1)*nlayers)]
-                #print(labels)
                 if add_background:
                     labels.append("ones_background")
-                #pdb.set_trace()
                 self.stack_in_wavelengths(catalog_in, labels=labels, distance_interval=distance_label, add_background=add_background)
         else:
             labels = []
@@ -62,10 +60,8 @@ class SimstackAlgorithm(SimstackToolbox, SimstackResults, Skymaps, Skycatalogs):
                 distance_labels.append("_".join(["redshift", str(bins[int(i)]), str(bins[int(i) + 1])]).replace('.', 'p'))
             if add_background:
                 labels.append("ones_background")
-            #pdb.set_trace()
             self.stack_in_wavelengths(catalog, labels=labels, distance_interval='all_redshifts', add_background=add_background)
 
-        #pdb.set_trace()
         self.config_dict['catalog']['distance_labels'] = distance_labels
         self.stack_successful = True
 
@@ -74,12 +70,10 @@ class SimstackAlgorithm(SimstackToolbox, SimstackResults, Skymaps, Skycatalogs):
         map_keys = list(self.maps_dict.keys())
         for wv in map_keys:
             map_dict = self.maps_dict[wv]
-            #pdb.set_trace()
             cube = self.build_cube(map_dict, catalog.copy(), labels=labels, crop_circles=crop_circles, add_background=add_background)
             nlayers = len(labels)
             print("Simultaneously Stacking {} Layers in {}".format(nlayers, wv))
             cov_ss_1d = self.regress_cube_layers(cube, labels=labels)
-            #pdb.set_trace()
             if 'stacked_flux_densities' not in self.maps_dict[wv]:
                 self.maps_dict[wv]['stacked_flux_densities'] = {distance_interval: cov_ss_1d}
             else:

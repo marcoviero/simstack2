@@ -96,7 +96,7 @@ class Skycatalogs:
 		ind_zlt1 = (table[uvkey] > 1.3) & (table[vjkey] < 1.5) & (table[zkey] < 1) & \
 				   (table[uvkey] > (table[vjkey] * 0.88 + 0.69))
 		ind_zgt1 = (table[uvkey] > 1.3) & (table[vjkey] < 1.5) & (table[zkey] >= 1) & \
-				   (table[uvkey] > (table[vjkey] * 0.88 + 0.59))
+				   (table[zkey] >= 1) & (table[uvkey] > (table[vjkey] * 0.88 + 0.59))
 
 		# Add sfg column
 		sfg = np.ones(len(table))

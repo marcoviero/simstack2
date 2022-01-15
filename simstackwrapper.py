@@ -26,6 +26,7 @@ class SimstackWrapper(SimstackAlgorithm):
         - optimal binning (bayesian blocks?)
         - lookback time
         - CIB estimates
+        - CUBE OF BEST FITS
 
     '''
     def __init__(self, param_file_path, read_maps=False, read_catalog=False, stack_automatically=False):
