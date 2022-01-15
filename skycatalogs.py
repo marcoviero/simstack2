@@ -45,18 +45,18 @@ class Skycatalogs:
 
 	def separate_by_label(self, split_dict, table, add_background=False):
 		#table = self.catalog_dict['table']
-		self.parameter_names = {}
+		parameter_names = {}
 		label_keys = list(split_dict.keys())
 		for key in label_keys:
 			if type(split_dict[key]['bins']) is str:
 				bins = json.loads(split_dict[key]['bins'])
-				self.parameter_names[key] = ["_".join([key, str(bins[i]), str(bins[i + 1])]) for i in range(len(bins[:-1]))]
+				parameter_names[key] = ["_".join([key, str(bins[i]), str(bins[i + 1])]) for i in range(len(bins[:-1]))]
 			elif type(split_dict[key]['bins']) is dict:
 				bins = len(split_dict[key]['bins'])
-				self.parameter_names[key] = ["_".join([key, str(i)]) for i in range(bins)]
+				parameter_names[key] = ["_".join([key, str(i)]) for i in range(bins)]
 			else:
 				bins = split_dict[key]['bins']
-				self.parameter_names[key] = ["_".join([key, str(i)]) for i in range(bins)]
+				parameter_names[key] = ["_".join([key, str(i)]) for i in range(bins)]
 			# Categorize using pandas.cut.  So good.
 			col = pd.cut(table[split_dict[key]['id']], bins=bins, labels=False)
 			col.name = key  # Rename column to label
@@ -65,12 +65,12 @@ class Skycatalogs:
 
 		# Name Cube Layers (i.e., parameters)
 		self.split_table['parameter_labels'] = []
-		for ipar in self.parameter_names[label_keys[0]]:
-			for jpar in self.parameter_names[label_keys[1]]:
+		for ipar in parameter_names[label_keys[0]]:
+			for jpar in parameter_names[label_keys[1]]:
 				if len(label_keys) > 2:
-					for kpar in self.parameter_names[label_keys[2]]:
+					for kpar in parameter_names[label_keys[2]]:
 						if len(label_keys) > 3:
-							for lpar in self.parameter_names[label_keys[3]]:
+							for lpar in parameter_names[label_keys[3]]:
 								pn = "__".join([ipar, jpar, kpar, lpar])
 								self.split_table['parameter_labels'].append(pn)
 						else:
@@ -81,6 +81,8 @@ class Skycatalogs:
 					self.split_table['parameter_labels'].append(pn)
 		if add_background:
 			self.split_table['parameter_labels'].append('background_layer')
+
+		self.results_dict['parameter_names'] = parameter_names
 		#pdb.set_trace()
 
 	def separate_sf_qt(self, split_dict, table):

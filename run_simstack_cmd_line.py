@@ -32,8 +32,7 @@ Returned object contains:
 - simstack_object.catalog_dict; dict_keys(['table'])
 - simstack_object.maps_dict; dict_keys(['spire_psw', 'spire_pmw', ...])
 - simstack_object.results_dict; dict_keys(['spire_plw', 'wavelengths']) # change to results, metadata
-- simstack_object.parameter_names; dict_keys(['redshift', 'stellar_mass', 'uvj']) # should move this to results metadata
-- simstack_object.fpath # Path to results.  Also move this into results metadata
+- SOMETHING I'M FORGETTING HERE PLEASE...
 
 Internal methods (i.e., functions) include:
 - import_catalog
@@ -69,25 +68,31 @@ def main():
     # Instantiate SIMSTACK object
     simstack_object = SimstackWrapper(param_file_path, read_maps=True, read_catalog=True)
 
-    t0 = time.time()
+    # Only do stacking if saved results not imported
+    try:
+        print('Imported Results Keys', simstack_object.results_dict.keys())
+        #pdb.set_trace()
+    except:
+        print('Now Stacking', param_file_path)
+        t0 = time.time()
 
-    # Begin Stacking
-    simstack_object.perform_simstack()
+        # Begin Stacking
+        simstack_object.perform_simstack()
 
-    # Rearrange results for plotting
-    simstack_object.parse_results()
+        # Rearrange results for plotting
+        simstack_object.parse_results()
 
-    # Save Results; they are stored in e.g., simstack_object.maps_dict['spire_plw']['stacked_flux_densities']
-    simstack_object.save_stacked_fluxes(param_file_path)
+        # Save Results; they are stored in e.g., simstack_object.maps_dict['spire_plw']['stacked_flux_densities']
+        simstack_object.save_stacked_fluxes(param_file_path)
 
-    # Summarize timing
-    t1 = time.time()
-    tpass = t1 - t0
+        # Summarize timing
+        t1 = time.time()
+        tpass = t1 - t0
 
-    logging.info("Stacking Successful!")
-    logging.info("Find Results {}".format(simstack_object.fpath))
-    logging.info("")
-    logging.info("Total time                        : {:.4f} minutes\n".format(tpass / 60.))
+        logging.info("Stacking Successful!")
+        logging.info("Find Results in {}".format(simstack_object.config_dict['pickles_path']))
+        logging.info("")
+        logging.info("Total time                        : {:.4f} minutes\n".format(tpass / 60.))
 
     pdb.set_trace()
 if __name__ == "__main__":

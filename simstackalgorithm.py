@@ -10,7 +10,7 @@ from skycatalogs import Skycatalogs
 from simstacktoolbox import SimstackToolbox
 from simstackresults import SimstackResults
 
-class SimstackAlgorithm(SimstackToolbox, Skymaps, Skycatalogs, SimstackResults):
+class SimstackAlgorithm(SimstackToolbox, SimstackResults, Skymaps, Skycatalogs):
 
     stack_successful = False
 
@@ -41,22 +41,32 @@ class SimstackAlgorithm(SimstackToolbox, Skymaps, Skycatalogs, SimstackResults):
         nlayers = np.prod(nlists[1:])
 
         # Stack in redshift slices if bin_all_at_once is False
+        bins = json.loads(split_dict["redshift"]['bins'])
+        distance_labels = []
         if binning['bin_all_at_once'] == "False":
             redshifts = catalog.pop("redshift")
-            bins = json.loads(split_dict["redshift"]['bins'])
             for i in np.unique(redshifts):
                 catalog_in = catalog[redshifts == i]
-                name = "_".join(["redshift", str(bins[int(i)]), str(bins[int(i) + 1])]).replace('.', 'p')
+                distance_label = "_".join(["redshift", str(bins[int(i)]), str(bins[int(i) + 1])]).replace('.', 'p')
+                distance_labels.append(distance_label)
                 labels = self.split_table['parameter_labels'][int(i*nlayers):int((i+1)*nlayers)]
                 #print(labels)
                 if add_background:
                     labels.append("ones_background")
                 #pdb.set_trace()
-                self.stack_in_wavelengths(catalog_in, labels=labels, distance_interval=name, add_background=add_background)
+                self.stack_in_wavelengths(catalog_in, labels=labels, distance_interval=distance_label, add_background=add_background)
         else:
-            self.stack_in_wavelengths(catalog, distance_interval='all_redshifts', add_background=add_background)
+            labels = []
+            for i in np.unique(catalog['redshift']):
+                labels.extend(self.split_table['parameter_labels'][int(i*nlayers):int((i+1)*nlayers)])
+                distance_labels.append("_".join(["redshift", str(bins[int(i)]), str(bins[int(i) + 1])]).replace('.', 'p'))
+            if add_background:
+                labels.append("ones_background")
+            #pdb.set_trace()
+            self.stack_in_wavelengths(catalog, labels=labels, distance_interval='all_redshifts', add_background=add_background)
 
         #pdb.set_trace()
+        self.config_dict['catalog']['distance_labels'] = distance_labels
         self.stack_successful = True
 
     def stack_in_wavelengths(self, catalog, labels=None, distance_interval=None, crop_circles=False, add_background=False):
@@ -64,8 +74,12 @@ class SimstackAlgorithm(SimstackToolbox, Skymaps, Skycatalogs, SimstackResults):
         map_keys = list(self.maps_dict.keys())
         for wv in map_keys:
             map_dict = self.maps_dict[wv]
+            #pdb.set_trace()
             cube = self.build_cube(map_dict, catalog.copy(), labels=labels, crop_circles=crop_circles, add_background=add_background)
+            nlayers = len(labels)
+            print("Simultaneously Stacking {} Layers in {}".format(nlayers, wv))
             cov_ss_1d = self.regress_cube_layers(cube, labels=labels)
+            #pdb.set_trace()
             if 'stacked_flux_densities' not in self.maps_dict[wv]:
                 self.maps_dict[wv]['stacked_flux_densities'] = {distance_interval: cov_ss_1d}
             else:
@@ -79,7 +93,6 @@ class SimstackAlgorithm(SimstackToolbox, Skymaps, Skycatalogs, SimstackResults):
         # Subtract mean from map
         imap = cube[-1, :]  # - np.mean(cube[-1, :], dtype=np.float32)
         cube = cube[:-1, :]
-
 
         # Step backward through cube so removal of rows does not affect order
         non_zero_parameter_labels = []
@@ -102,8 +115,8 @@ class SimstackAlgorithm(SimstackToolbox, Skymaps, Skycatalogs, SimstackResults):
         for iparam in non_zero_parameter_labels[::-1]:
             fit_params.add(iparam, value=1e-3 * np.random.randn())
 
-        nlayers = len(fit_params)
-        print("Number of Layers Stacking Simultaneously = {}".format(nlayers))
+        #nlayers = len(fit_params)
+        #print("Number of Layers Stacking Simultaneously = {}".format(nlayers))
         #pdb.set_trace()
         cov_ss_1d = minimize(self.simultaneous_stack_array_oned, fit_params,
                              args=(np.ndarray.flatten(cube),),
@@ -162,6 +175,7 @@ class SimstackAlgorithm(SimstackToolbox, Skymaps, Skycatalogs, SimstackResults):
         nlayers = np.prod(nlists)
 
         #print("Number of Layers Stacking Simultaneously = {}".format(nlayers+np.sum(add_background)))
+        #pdb.set_trace()
 
         if np.sum(cnoise) == 0: cnoise = cmap * 0.0 + 1.0
 

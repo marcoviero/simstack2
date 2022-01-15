@@ -11,19 +11,15 @@ class SimstackResults():
 	def __init__(self):
 		super().__init__()
 
-	def import_saved_results(self, pickle_file):
-
-		tst = self.import_saved_pickles(pickle_file)
-		pdb.set_trace()
-
 	def parse_results(self, beta_rj=1.8):
-
+		#self.results_dict = {}
 		wavelength_keys = list(self.maps_dict.keys())
 		wavelengths = []
 		split_dict = json.loads(self.config_dict['catalog']['classification'])
 		split_type = split_dict.pop('split_type')
 		label_keys = list(split_dict.keys())
-		label_dict = self.parameter_names
+		#label_dict = self.parameter_names
+		label_dict = self.results_dict['parameter_names']
 		ds = [len(label_dict[k]) for k in label_dict]
 
 		sed_flux_array = np.zeros([len(wavelength_keys), *ds])
@@ -37,31 +33,36 @@ class SimstackResults():
 			error_array = np.zeros(ds)
 			results_object = self.maps_dict[key]['stacked_flux_densities']
 
-			z_label = []
-			for z, zval in enumerate(results_object):
-				z_label.append(zval)
+			#z_label = []
+			#for z, zlab in enumerate(results_object):
+			for z, zval in enumerate(self.config_dict['catalog']['distance_labels']):
+				if 'all_redshifts' in results_object:
+					zlab = 'all_redshifts'
+				else:
+					zlab = zval
+				#z_label.append(zval)
 				for i, ival in enumerate(label_dict[label_keys[1]]):
 					if len(label_keys) > 2:
 						for j, jval in enumerate(label_dict[label_keys[2]]):
 							label = "__".join([zval, ival, jval]).replace('.', 'p')
 							#print(label)
 							# CHECK THAT LABEL EXISTS FIRST
-							if label in results_object[zval].params:
-								flux_array[z, i, j] = results_object[zval].params[label].value
-								error_array[z, i, j] = results_object[zval].params[label].stderr
-								#sed_array['flux_density'][k, z, i, j] = flux_array[z, i, j]
+							if label in results_object[zlab].params:
+								flux_array[z, i, j] = results_object[zlab].params[label].value
+								error_array[z, i, j] = results_object[zlab].params[label].stderr
 							else:
 								print(label, ' does not exist')
 					else:
 						label = "__".join([zval, ival]).replace('.', 'p')
 						#print(label)
-						if label in results_object[zval].params:
-							flux_array[z, i] = results_object[zval].params[label].value
-							error_array[z, i] = results_object[zval].params[label].stderr
+						#pdb.set_trace()
+						if label in results_object[zlab].params:
+							flux_array[z, i] = results_object[zlab].params[label].value
+							error_array[z, i] = results_object[zlab].params[label].stderr
 						else:
 							print(label, ' does not exist')
-
-			z_bins = [i.replace('p', '.').split('_')[1:] for i in z_label]
+			#pdb.set_trace()
+			z_bins = [i.replace('p', '.').split('_')[1:] for i in self.config_dict['catalog']['distance_labels']]
 			z_mid = [(float(i[0]) + float(i[1]))/2 for i in z_bins]
 
 			self.results_dict[key]['results_df'] = {}

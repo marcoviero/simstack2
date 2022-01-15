@@ -17,6 +17,102 @@ class SimstackToolbox:
 
         self.config_dict = self.get_params_dict(param_file_path)
 
+    def replace_self(self, imported_object, dict_list=['results_dict', 'config_dict', 'catalog_dict', 'maps_dict']):
+
+        for i in dict_list:
+            setattr(self, i, getattr(imported_object, i))
+
+    def save_stacked_fluxes(self, fp_in, overwrite_results=False):
+        if 'overwrite_results' in self.config_dict['io']:
+            overwrite_results = self.config_dict['io']['overwrite_results']
+
+        if 'shortname' in self.config_dict['io']:
+            shortname = self.config_dict['io']['shortname']
+        else:
+            shortname = os.path.basename(fp_in).split('.')[0]
+
+        out_file_path = os.path.join(self.parse_path(self.config_dict['io']['output_folder']),
+                                     shortname)
+        if not os.path.exists(out_file_path):
+            os.makedirs(out_file_path)
+        else:
+            if not overwrite_results:
+                while os.path.exists(out_file_path):
+                    out_file_path = out_file_path + "_"
+                os.makedirs(out_file_path)
+
+        fpath = os.path.join(out_file_path, shortname + '.pkl')
+
+        print('pickling to ' + fpath)
+        #self.fpath=fpath
+        self.config_dict['pickles_path'] = fpath
+        with open(fpath, "wb") as pickle_file_path:
+            pickle.dump(self, pickle_file_path)
+
+        # Copy Parameter File
+        fp_name = os.path.basename(fp_in)
+        fp_out = os.path.join(out_file_path, fp_name)
+        logging.info("Copying parameter file...")
+        logging.info("  FROM : {}".format(fp_in))
+        logging.info("    TO : {}".format(fp_out))
+        logging.info("")
+        shutil.copyfile(fp_in, fp_out)
+        pdb.set_trace()
+
+    def import_saved_pickles(self, pickle_fn):
+        with open(pickle_fn, "rb") as file_path:
+            encoding = pickle.load(file_path)
+        return encoding
+
+    def parse_path(self, path_in):
+        #print(path_in)
+        path_in = path_in.split(" ")
+        if len(path_in) == 1:
+            return path_in[0]
+        else:
+            path_env = os.environ[path_in[0]]
+            if len(path_in) == 2:
+                if 'nt' in os.name:
+                    return path_env + os.path.join('\\', path_in[1].replace('/', '\\'))
+                else:
+                    return path_env + os.path.join('/', path_in[1])
+            else:
+                if 'nt' in os.name:
+                    path_rename = [i.replace('/', '\\') for i in path_in[1:]]
+                    return path_env + os.path.join('\\', *path_rename)
+                else:
+                    return path_env + os.path.join('/', *path_in[1:])
+
+    def get_params_dict(self, param_file_path):
+        config = ConfigParser()
+        config.read(param_file_path)
+
+        dict_out = {}
+        for section in config.sections():
+            dict_sect = {}
+            for (each_key, each_val) in config.items(section):
+                dict_sect[each_key] = each_val.replace("'", '"')
+
+            dict_out[section] = dict_sect
+
+        return dict_out
+
+    def write_config_file(self, params_out, config_filename_out):
+        config_out = ConfigParser()
+
+        for ikey, idict in params_out.items():
+            if not config_out.has_section(ikey):
+
+                config_out.add_section(ikey)
+                for isect, ivals in idict.items():
+                    # pdb.set_trace()
+                    # print(ikey, isect, ivals)
+                    config_out.set(ikey, isect, str(ivals))
+
+        # Write config_filename_out (check if overwriting externally)
+        with open(config_filename_out, 'w') as conf:
+            config_out.write(conf)
+
     def fast_sed_fitter(self, wavelengths, fluxes, covar, betain=1.8):
         fit_params = Parameters()
         fit_params.add('A', value=1e-32, vary=True)
@@ -208,89 +304,3 @@ class SimstackToolbox:
         rms_1sig = abs(fit[2])
 
         return rms_1sig
-
-    def parse_path(self, path_in):
-        #print(path_in)
-        path_in = path_in.split(" ")
-        if len(path_in) == 1:
-            return path_in[0]
-        else:
-            path_env = os.environ[path_in[0]]
-            if len(path_in) == 2:
-                if 'nt' in os.name:
-                    return path_env + os.path.join('\\', path_in[1].replace('/', '\\'))
-                else:
-                    return path_env + os.path.join('/', path_in[1])
-            else:
-                if 'nt' in os.name:
-                    path_rename = [i.replace('/', '\\') for i in path_in[1:]]
-                    return path_env + os.path.join('\\', *path_rename)
-                else:
-                    return path_env + os.path.join('/', *path_in[1:])
-
-    def import_saved_pickles(self, pickle_fn):
-        with open(pickle_fn, "rb") as file_path:
-            encoding = pickle.load(file_path)
-        return encoding
-
-    def save_stacked_fluxes(self, fp_in, append_to_existing=False):
-        if 'shortname' in self.config_dict['io']:
-            shortname = self.config_dict['io']['shortname']
-        else:
-            shortname = os.path.basename(fp_in).split('.')[0]
-
-        out_file_path = os.path.join(self.parse_path(self.config_dict['io']['output_folder']),
-                                     shortname)
-        if not os.path.exists(out_file_path):
-            os.makedirs(out_file_path)
-        else:
-            if not append_to_existing:
-                while os.path.exists(out_file_path):
-                    out_file_path = out_file_path + "_"
-                os.makedirs(out_file_path)
-
-        fpath = os.path.join(out_file_path, shortname + '.pkl')
-
-        print('pickling to ' + fpath)
-        self.fpath=fpath
-        with open(fpath, "wb") as pickle_file_path:
-            pickle.dump(self, pickle_file_path)
-
-        # Copy Parameter File
-        fp_name = os.path.basename(fp_in)
-        fp_out = os.path.join(out_file_path, fp_name)
-        logging.info("Copying parameter file...")
-        logging.info("  FROM : {}".format(fp_in))
-        logging.info("    TO : {}".format(fp_out))
-        logging.info("")
-        shutil.copyfile(fp_in, fp_out)
-
-    def get_params_dict(self, param_file_path):
-        config = ConfigParser()
-        config.read(param_file_path)
-
-        dict_out = {}
-        for section in config.sections():
-            dict_sect = {}
-            for (each_key, each_val) in config.items(section):
-                dict_sect[each_key] = each_val.replace("'", '"')
-
-            dict_out[section] = dict_sect
-
-        return dict_out
-
-    def write_config_file(self, params_out, config_filename_out):
-        config_out = ConfigParser()
-
-        for ikey, idict in params_out.items():
-            if not config_out.has_section(ikey):
-
-                config_out.add_section(ikey)
-                for isect, ivals in idict.items():
-                    # pdb.set_trace()
-                    # print(ikey, isect, ivals)
-                    config_out.set(ikey, isect, str(ivals))
-
-        # Write config_filename_out (check if overwriting externally)
-        with open(config_filename_out, 'w') as conf:
-            config_out.write(conf)
