@@ -32,14 +32,11 @@ class SimstackResults():
 			error_array = np.zeros(ds)
 			results_object = self.maps_dict[key]['stacked_flux_densities']
 
-			#z_label = []
-			#for z, zlab in enumerate(results_object):
 			for z, zval in enumerate(self.config_dict['catalog']['distance_labels']):
 				if 'all_redshifts' in results_object:
 					zlab = 'all_redshifts'
 				else:
 					zlab = zval
-				#z_label.append(zval)
 				for i, ival in enumerate(label_dict[label_keys[1]]):
 					if len(label_keys) > 2:
 						for j, jval in enumerate(label_dict[label_keys[2]]):
@@ -100,23 +97,17 @@ class SimstackResults():
 					#z_dict[zval] = {"flux_density": flux_array[z, :], "std_error": error_array[z, :]}
 
 			m_dict = {'flux_density': {}, 'std_error': {}, 'stellar_mass': []}
-			#m_dict = {}
 			for i, ival in enumerate(label_dict[label_keys[1]]):
 				m_dict['flux_density'][ival] = {}
 				m_dict['std_error'][ival] = {}
 				m_dict['stellar_mass'].append(ival)
-				#m_dict[ival] = {}
 				if len(label_keys) > 2:
 					for j, jval in enumerate(label_dict[label_keys[2]]):
 						m_dict['flux_density'][ival][jval] = flux_array[:, i, j]
 						m_dict['std_error'][ival][jval] = error_array[:, i, j]
-						#m_dict[ival][jval] = {"flux_density": flux_array[:, i, j], "std_error": error_array[:, i, j]}
 				else:
 					m_dict['flux_density'][ival] = flux_array[:, i]
 					m_dict['std_error'][ival] = error_array[:, i]
-					#m_dict[ival] = {"flux_density": flux_array[:, i], "std_error": error_array[:, i]}
-
-			#wv_dict
 
 			self.results_dict[key][label_keys[0]] = z_dict
 			self.results_dict[key][label_keys[1]] = m_dict
@@ -125,26 +116,53 @@ class SimstackResults():
 			sed_error_array[k, :, :] = error_array
 
 		# Store Wavelengths
-		self.results_dict['wavelengths'] = wavelengths
+		#self.results_dict['wavelengths'] = wavelengths
 
 		# Organize into SEDs
-		self.results_dict['SED_df'] = {'flux_density': {}, 'std_error': {}, 'temperature': {}, 'LIR': {}}
+		self.results_dict['SED_df'] = {'flux_density': {}, 'std_error': {}, 'SED': {}, 'LIR': {},
+									   'wavelengths': wavelengths}
 		for z, zlab in enumerate(label_dict[label_keys[0]]):
 			if len(label_keys) > 2:
 				for j, jlab in enumerate(label_dict[label_keys[2]]):
 					if zlab not in self.results_dict['SED_df']['flux_density']:
 						self.results_dict['SED_df']['flux_density'][zlab] = {}
 						self.results_dict['SED_df']['std_error'][zlab] = {}
-					self.results_dict['SED_df']['flux_density'][zlab][jlab] =\
+						self.results_dict['SED_df']['LIR'][zlab] = {}
+						self.results_dict['SED_df']['SED'][zlab] = {}
+
+					self.results_dict['SED_df']['flux_density'][zlab][jlab] = \
 						pd.DataFrame(sed_flux_array[:, z, :, j], index=wavelengths, columns=label_dict[label_keys[1]])
 					self.results_dict['SED_df']['std_error'][zlab][jlab] = \
 						pd.DataFrame(sed_error_array[:, z, :, j], index=wavelengths, columns=label_dict[label_keys[1]])
+
+					for i, ilab in enumerate(label_dict[label_keys[1]]):
+						tst_m = self.fast_sed_fitter(wavelengths, sed_flux_array[:, z, i, j], sed_error_array[:, z, i, j],
+													 betain=1.8)
+						tst_LIR = self.fast_Lir(tst_m, z_mid[z])
+						#pdb.set_trace()
+						if jlab not in self.results_dict['SED_df']['LIR']:
+							self.results_dict['SED_df']['LIR'][zlab][jlab] = {}
+							self.results_dict['SED_df']['SED'][zlab][jlab] = {}
+						self.results_dict['SED_df']['LIR'][zlab][jlab][ilab] = tst_LIR.value
+						self.results_dict['SED_df']['SED'][zlab][jlab][ilab] = tst_m
 			else:
 				self.results_dict['SED_df']['flux_density'][zlab] = \
 					pd.DataFrame(sed_flux_array[:, z, :], index=wavelengths, columns=label_dict[label_keys[1]])
 				self.results_dict['SED_df']['std_error'][zlab] = \
 					pd.DataFrame(sed_error_array[:, z, :], index=wavelengths, columns=label_dict[label_keys[1]])
 
-		#pdb.set_trace()
+				for i, ilab in enumerate(label_dict[label_keys[1]]):
+					tst_m = self.fast_sed_fitter(wavelengths, sed_flux_array[:, z, i], sed_error_array[:, z, i],
+												 betain=1.8)
+					tst_LIR = self.fast_Lir(tst_m, z_mid[z])
+
+					#pdb.set_trace()
+					if zlab not in self.results_dict['SED_df']['LIR']:
+						self.results_dict['SED_df']['LIR'][zlab] = {}
+						self.results_dict['SED_df']['SED'][zlab] = {}
+					self.results_dict['SED_df']['LIR'][zlab][ilab] = tst_LIR.value
+					self.results_dict['SED_df']['SED'][zlab][ilab] = tst_m
+
+		pdb.set_trace()
 
 

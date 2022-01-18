@@ -98,7 +98,7 @@ class SimstackAlgorithm(SimstackToolbox, SimstackResults, Skymaps, Skycatalogs):
 
         return trimmed_labels
 
-    def build_cube(self, map_dict, catalog, labels=None, add_background=False, crop_circles=False, write_fits_layers=False):
+    def build_cube(self, map_dict, catalog, labels=None, add_background=False, crop_circles=True, write_fits_layers=False):
 
         cmap = map_dict['map']
         cnoise = map_dict['noise']

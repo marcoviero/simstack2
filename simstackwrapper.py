@@ -29,7 +29,7 @@ class SimstackWrapper(SimstackAlgorithm):
         - CUBE OF BEST FITS
 
     '''
-    def __init__(self, param_file_path, read_maps=False, read_catalog=False, stack_automatically=False):
+    def __init__(self, param_file_path, read_maps=False, read_catalog=False, stack_automatically=False, debug=False):
         super().__init__(param_file_path)
 
         if 'shortname' in self.config_dict['io']:

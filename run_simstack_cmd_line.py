@@ -60,12 +60,15 @@ def main():
         format='%(asctime)s  %(message)s',
         datefmt='%Y-%d-%m %I:%M:%S %p')
 
+    # Debug Flag
+    debug = True
+
     # Get parameters from the provided parameter file
     #param_file_path = sys.argv[1]
-    param_file_path = os.path.join('examples', 'cosmos2020.ini')
+    param_file_path = os.path.join('examples', 'cosmos2020_highz.ini')
 
     # Instantiate SIMSTACK object
-    simstack_object = SimstackWrapper(param_file_path, read_maps=True, read_catalog=True)
+    simstack_object = SimstackWrapper(param_file_path, read_maps=True, read_catalog=True, debug=debug)
 
     # Only do stacking if saved results not imported
     if len(simstack_object.results_dict.keys()) > 1:
