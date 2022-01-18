@@ -63,7 +63,42 @@ class SimstackAlgorithm(SimstackToolbox, SimstackResults, Skymaps, Skycatalogs):
         self.config_dict['catalog']['distance_labels'] = distance_labels
         self.stack_successful = True
 
-    def build_cube(self, map_dict, catalog, add_background=False, crop_circles=True, write_fits_layers=False):
+    def trim_label_list(self, catalog, labels):
+
+        # Extract RA and DEC from catalog
+        ra_series = catalog.pop('ra')
+        dec_series = catalog.pop('dec')
+        keys = list(catalog.keys())
+        trimmed_labels = []
+
+        label_dict = self.config_dict['parameter_names']
+        ds = [len(label_dict[k]) for k in label_dict]
+        if len(labels) == np.prod(ds[1:]):
+            nlists = ds[1:]
+        else:
+            nlists = ds
+
+        ilayer = 0
+        for ipop in range(nlists[0]):
+            if len(nlists) > 1:
+                for jpop in range(nlists[1]):
+                    if len(nlists) > 2:
+                        for kpop in range(nlists[2]):
+                            if sum((catalog[keys[0]] == ipop) & (catalog[keys[1]] == jpop) & (catalog[keys[2]] == kpop)) > 0:
+                                trimmed_labels.append(labels[ilayer])
+                            ilayer += 1
+                    else:
+                        if sum((catalog[keys[0]] == ipop) & (catalog[keys[1]] == jpop)) > 0:
+                            trimmed_labels.append(labels[ilayer])
+                        ilayer += 1
+            else:
+                if sum(catalog[keys[0]] == ipop) > 0:
+                    trimmed_labels.append(labels[ilayer])
+                ilayer += 1
+
+        return trimmed_labels
+
+    def build_cube(self, map_dict, catalog, labels=None, add_background=False, crop_circles=False, write_fits_layers=False):
 
         cmap = map_dict['map']
         cnoise = map_dict['noise']
@@ -80,41 +115,57 @@ class SimstackAlgorithm(SimstackToolbox, SimstackResults, Skymaps, Skycatalogs):
         # FIND SIZES OF MAP AND LISTS
         cms = np.shape(cmap)
 
-        nlists = []
-        for k in keys:
-            nlists.append(len(np.unique(catalog[k])))
-        nlayers = np.prod(nlists)
-
-        #print("Number of Layers Stacking Simultaneously = {}".format(nlayers+np.sum(add_background)))
+        label_dict = self.config_dict['parameter_names']
+        ds = [len(label_dict[k]) for k in label_dict]
+        if len(labels) == np.prod(ds[1:]):
+            nlists = ds[1:]
+        else:
+            nlists = ds
 
         if np.sum(cnoise) == 0: cnoise = cmap * 0.0 + 1.0
 
         # STEP 1  - Make Layers Cube
-        layers = np.zeros([nlayers, cms[0], cms[1]])
+        layers = np.zeros([np.prod(nlists), cms[0], cms[1]])
 
+        trimmed_labels = []
         ilayer = 0
-        ipops = np.unique(catalog[keys[0]])
+        ilabel = 0
         for ipop in range(nlists[0]):
             if len(nlists) > 1:
-                jpops = np.unique(catalog[keys[1]])
                 for jpop in range(nlists[1]):
                     if len(nlists) > 2:
-                        kpops = np.unique(catalog[keys[2]])
                         for kpop in range(nlists[2]):
-                            ind_src = (catalog[keys[0]] == ipops[ipop]) & (catalog[keys[1]] == jpops[jpop]) & (catalog[keys[2]] == kpops[kpop])
+                            ind_src = (catalog[keys[0]] == ipop) & (catalog[keys[1]] == jpop) & (catalog[keys[2]] == kpop)
+                            if sum(ind_src) > 0:
+                                real_x, real_y = self.get_x_y_from_ra_dec(wmap, cms, ind_src, ra_series, dec_series)
+                                layers[ilayer, real_x, real_y] += 1.0
+                                trimmed_labels.append(labels[ilabel])
+                                ilayer += 1
+                            else:
+                                layers = np.delete(layers, ilayer, 0)
+                            ilabel += 1
+                    else:
+                        ind_src = (catalog[keys[0]] == ipop) & (catalog[keys[1]] == jpop)
+                        if sum(ind_src) > 0:
                             real_x, real_y = self.get_x_y_from_ra_dec(wmap, cms, ind_src, ra_series, dec_series)
                             layers[ilayer, real_x, real_y] += 1.0
+                            trimmed_labels.append(labels[ilabel])
                             ilayer += 1
-                    else:
-                        ind_src = (catalog[keys[0]] == ipops[ipop]) & (catalog[keys[1]] == jpops[jpop])
-                        real_x, real_y = self.get_x_y_from_ra_dec(wmap, cms, ind_src, ra_series, dec_series)
-                        layers[ilayer, real_x, real_y] += 1.0
-                        ilayer += 1
+                        else:
+                            layers = np.delete(layers, ilayer, 0)
+                        ilabel += 1
             else:
-                ind_src = (catalog[keys[0]] == ipops[ipop])
-                real_x, real_y = self.get_x_y_from_ra_dec(wmap, cms, ind_src, ra_series, dec_series)
-                layers[ilayer, real_x, real_y] += 1.0
-                ilayer += 1
+                ind_src = (catalog[keys[0]] == ipop)
+                if sum(ind_src) > 0:
+                    real_x, real_y = self.get_x_y_from_ra_dec(wmap, cms, ind_src, ra_series, dec_series)
+                    layers[ilayer, real_x, real_y] += 1.0
+                    trimmed_labels.append(labels[ilabel])
+                    ilayer += 1
+                else:
+                    layers = np.delete(layers, ilayer, 0)
+                ilabel += 1
+
+        nlayers = np.shape(layers)[0]
 
         # STEP 2  - Convolve Layers and put in pixels
         if crop_circles:
@@ -155,53 +206,19 @@ class SimstackAlgorithm(SimstackToolbox, SimstackResults, Skymaps, Skycatalogs):
         cfits_maps[-2, :] = cmap[ind_fit]
         cfits_maps[-1, :] = cnoise[ind_fit]
 
-        return cfits_maps
-
-    def trim_label_list(self, catalog, labels):
-
-        # Extract RA and DEC from catalog
-        ra_series = catalog.pop('ra')
-        dec_series = catalog.pop('dec')
-        keys = list(catalog.keys())
-        trimmed_labels = []
-
-        label_dict = self.config_dict['parameter_names']
-        ds = [len(label_dict[k]) for k in label_dict]
-        if len(labels) == np.prod(ds[1:]):
-            nlists = ds[1:]
-        else:
-            nlists = ds
-
-        ilayer = 0
-        for ipop in range(nlists[0]):
-            if len(nlists) > 1:
-                for jpop in range(nlists[1]):
-                    if len(nlists) > 2:
-                        for kpop in range(nlists[2]):
-                            if sum((catalog[keys[0]] == ipop) & (catalog[keys[1]] == jpop) & (catalog[keys[2]] == kpop)) > 0:
-                                trimmed_labels.append(labels[ilayer])
-                            ilayer += 1
-                    else:
-                        if sum((catalog[keys[0]] == ipop) & (catalog[keys[1]] == jpop)) > 0:
-                            trimmed_labels.append(labels[ilayer])
-                        ilayer += 1
-            else:
-                if sum(catalog[keys[0]] == ipop) > 0:
-                    trimmed_labels.append(labels[ilayer])
-                ilayer += 1
-
-        return trimmed_labels
+        #pdb.set_trace()
+        return {'cube': cfits_maps, 'labels': trimmed_labels}
 
     def stack_in_wavelengths(self, catalog, labels=None, distance_interval=None, crop_circles=False, add_background=False):
 
         map_keys = list(self.maps_dict.keys())
         for wv in map_keys:
             map_dict = self.maps_dict[wv]
-            cube = self.build_cube(map_dict, catalog.copy(), crop_circles=crop_circles, add_background=add_background)
-            cube_labels = self.trim_label_list(catalog.copy(), labels)
-            nlayers = len(cube_labels)
-            print("Simultaneously Stacking {} Layers in {}".format(nlayers, wv))
-            cov_ss_1d = self.regress_cube_layers(cube, labels=cube_labels)
+            cube_dict = self.build_cube(map_dict, catalog.copy(), labels=labels, crop_circles=crop_circles, add_background=add_background)
+            #cube_labels = self.trim_label_list(catalog.copy(), labels)
+            cube_labels = cube_dict['labels']
+            print("Simultaneously Stacking {} Layers in {}".format(len(cube_labels), wv))
+            cov_ss_1d = self.regress_cube_layers(cube_dict['cube'], labels=cube_dict['labels'])
             if 'stacked_flux_densities' not in self.maps_dict[wv]:
                 self.maps_dict[wv]['stacked_flux_densities'] = {distance_interval: cov_ss_1d}
             else:
@@ -212,33 +229,19 @@ class SimstackAlgorithm(SimstackToolbox, SimstackResults, Skymaps, Skycatalogs):
         # Extract Noise and Signal Maps from Cube (and then delete layers)
         ierr = cube[-1, :]
         cube = cube[:-1, :]
-        # Subtract mean from map
-        imap = cube[-1, :]  # - np.mean(cube[-1, :], dtype=np.float32)
+        imap = cube[-1, :]
         cube = cube[:-1, :]
 
         # Step backward through cube so removal of rows does not affect order
-        non_zero_parameter_labels = []
-        ilab = 0
-        for iarg in range(len(cube))[::-1]:
-            # Remove empty layers
-            if np.sum(abs(cube[iarg, :])) > 0:
-                if not labels:
-                    parameter_label = self.catalog_dict['tables']['parameter_labels'][ilab].replace('.', 'p')
-                    ilab += 1
-                else:
-                    parameter_label = labels[ilab].replace('.', 'p')
-                    ilab += 1
-                # Add parameter_label to non_zero_parameter_labels
-                non_zero_parameter_labels.append(parameter_label)
-            else:
-                # Remove empty layer from cube, and don't add to non_zero_parameter_labels
-                cube = np.delete(cube, iarg, 0)
-
-        # Add non-empty Parameters to fit_params in right order
         fit_params = Parameters()
-        #for iparam in non_zero_parameter_labels[::-1]:
-        for iparam in non_zero_parameter_labels:
-            fit_params.add(iparam, value=1e-3 * np.random.randn())
+        for iarg in range(len(cube)):
+            # Remove empty layers
+            if not labels:
+                parameter_label = self.catalog_dict['tables']['parameter_labels'][iarg].replace('.', 'p')
+            else:
+                parameter_label = labels[iarg].replace('.', 'p')
+            # Add parameter
+            fit_params.add(parameter_label, value=1e-3 * np.random.randn())
 
         cov_ss_1d = minimize(self.simultaneous_stack_array_oned, fit_params,
                              args=(np.ndarray.flatten(cube),),
