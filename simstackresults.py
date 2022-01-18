@@ -18,8 +18,7 @@ class SimstackResults():
 		split_dict = json.loads(self.config_dict['catalog']['classification'])
 		split_type = split_dict.pop('split_type')
 		label_keys = list(split_dict.keys())
-		#label_dict = self.parameter_names
-		label_dict = self.results_dict['parameter_names']
+		label_dict = self.config_dict['parameter_names']
 		ds = [len(label_dict[k]) for k in label_dict]
 
 		sed_flux_array = np.zeros([len(wavelength_keys), *ds])

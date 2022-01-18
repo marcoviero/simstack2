@@ -32,7 +32,6 @@ Returned object contains:
 - simstack_object.catalog_dict; dict_keys(['table'])
 - simstack_object.maps_dict; dict_keys(['spire_psw', 'spire_pmw', ...])
 - simstack_object.results_dict; dict_keys(['spire_plw', 'wavelengths']) # change to results, metadata
-- SOMETHING I'M FORGETTING HERE PLEASE...
 
 Internal methods (i.e., functions) include:
 - import_catalog
@@ -69,10 +68,10 @@ def main():
     simstack_object = SimstackWrapper(param_file_path, read_maps=True, read_catalog=True)
 
     # Only do stacking if saved results not imported
-    try:
+    if len(simstack_object.results_dict.keys()) > 1:
         print('Imported Results Keys', simstack_object.results_dict.keys())
         #pdb.set_trace()
-    except:
+    else:
         print('Now Stacking', param_file_path)
         t0 = time.time()
 
