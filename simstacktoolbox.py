@@ -312,7 +312,7 @@ class SimstackToolbox:
         outmap = np.zeros([pad_side, pad_side])
         outmap[:xx, :yy] = pixmap
 
-        dist_array = np.shift_twod(np.dist_idl(pad_side, pad_side), pad_side / 2, pad_side / 2)
+        dist_array = self.shift_twod(self.dist_idl(pad_side, pad_side), pad_side / 2, pad_side / 2)
         circ = np.zeros([pad_side, pad_side])
         ind_one = np.where(dist_array <= radius)
         circ[ind_one] = 1.
@@ -444,7 +444,7 @@ class SimstackToolbox:
 
         return [logl, Tdust]
 
-    def viero_2013_luminosities_fast(self, z, mass, sfg=1):
+    def viero_2013_luminosities(z, mass, sfg=1):
         import numpy as np
         y = np.array([[-7.2477881, 3.1599509, -0.13741485],
                       [-1.6335178, 0.33489572, -0.0091072162],
@@ -457,14 +457,13 @@ class SimstackToolbox:
         ex = np.zeros([nm, nz, npp])
         logl = np.zeros([nm, nz])
 
-        for ij in range(npp):
-            pdb.set_trace()
-            for ik in range(npp):
-                ex[:, :, ij] += y[ij, ik] * mass ** (ik)
-                pdb.set_trace()
-            for ij in range(npp):
-                logl += ex[:, :, ij] * z ** (ij)
-                pdb.set_trace()
+        for iz in range(nz):
+            for im in range(nm):
+                for ij in range(npp):
+                    for ik in range(npp):
+                        ex[im, iz, ij] += y[ij, ik] * mass[im] ** (ik)
+                for ij in range(npp):
+                    logl[im, iz] += ex[im, iz, ij] * z[iz] ** (ij)
 
         T_0 = 27.0
         z_T = 1.0

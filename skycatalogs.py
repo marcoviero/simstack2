@@ -87,7 +87,7 @@ class Skycatalogs:
 
 		self.config_dict['parameter_names'] = parameter_names
 
-	def separate_sf_qt_uvj(self, split_dict, table, zcut=6):
+	def separate_sf_qt_uvj(self, split_dict, table, zcut=8):
 
 		uvkey = split_dict['uvj']["bins"]['U-V']
 		vjkey = split_dict['uvj']["bins"]['V-J']
@@ -108,7 +108,7 @@ class Skycatalogs:
 
 		self.separate_by_label(split_dict, table)
 
-	def separate_sf_qt_nuvrj(self, split_dict, table, zcut=6):
+	def separate_sf_qt_nuvrj(self, split_dict, table, zcut=8):
 
 		uvrkey = split_dict['nuvrj']["bins"]['UV-R']
 		rjkey = split_dict['nuvrj']["bins"]['R-J']

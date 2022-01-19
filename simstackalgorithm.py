@@ -102,7 +102,7 @@ class SimstackAlgorithm(SimstackToolbox, SimstackResults, Skymaps, Skycatalogs):
 
         return trimmed_labels
 
-    def build_cube(self, map_dict, catalog, labels=None, add_background=False, crop_circles=True, write_fits_layers=False):
+    def build_cube(self, map_dict, catalog, labels=None, add_background=False, crop_circles=False, write_fits_layers=False):
 
         cmap = map_dict['map']
         cnoise = map_dict['noise']
@@ -177,6 +177,7 @@ class SimstackAlgorithm(SimstackToolbox, SimstackResults, Skymaps, Skycatalogs):
             flattened_pixmap = np.sum(layers, axis=0)
             total_circles_mask = self.circle_mask(flattened_pixmap, radius * fwhm, pix)
             ind_fit = np.where(total_circles_mask >= 1)
+            #pdb.set_trace()
         else:
             ind_fit = np.where(0 * np.sum(layers, axis=0) == 0)
 
