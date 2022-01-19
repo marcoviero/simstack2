@@ -41,7 +41,11 @@ class Skycatalogs:
 
 		# By uvj means it splits into star-forming and quiescent galaxies via the u-v/v-j method.
 		if 'uvj' in split_type:
-			self.separate_sf_qt(split_dict, self.catalog_dict['tables']['full_table'])
+			self.separate_sf_qt_uvj(split_dict, self.catalog_dict['tables']['full_table'])
+
+		# By nuvrj means it splits into star-forming and quiescent galaxies via the NUV-r/r-j method.
+		if 'nuvrj' in split_type:
+			self.separate_sf_qt_nuvrj(split_dict, self.catalog_dict['tables']['full_table'])
 
 	def separate_by_label(self, split_dict, table, add_background=False):
 		parameter_names = {}
@@ -83,7 +87,7 @@ class Skycatalogs:
 
 		self.config_dict['parameter_names'] = parameter_names
 
-	def separate_sf_qt(self, split_dict, table):
+	def separate_sf_qt_uvj(self, split_dict, table, zcut=6):
 
 		uvkey = split_dict['uvj']["bins"]['U-V']
 		vjkey = split_dict['uvj']["bins"]['V-J']
@@ -93,13 +97,30 @@ class Skycatalogs:
 		ind_zlt1 = (table[uvkey] > 1.3) & (table[vjkey] < 1.5) & (table[zkey] < 1) & \
 				   (table[uvkey] > (table[vjkey] * 0.88 + 0.69))
 		ind_zgt1 = (table[uvkey] > 1.3) & (table[vjkey] < 1.5) & (table[zkey] >= 1) & \
-				   (table[zkey] < 6) & (table[uvkey] > (table[vjkey] * 0.88 + 0.59))
+				   (table[zkey] < zcut) & (table[uvkey] > (table[vjkey] * 0.88 + 0.59))
 
 		# Add sfg column
 		sfg = np.ones(len(table))
 		sfg[ind_zlt1] = 0
 		sfg[ind_zgt1] = 0
 		class_label = split_dict['uvj']["id"]  # typically 'sfg', but can be anything.
+		table[class_label] = sfg
+
+		self.separate_by_label(split_dict, table)
+
+	def separate_sf_qt_nuvrj(self, split_dict, table, zcut=6):
+
+		uvrkey = split_dict['nuvrj']["bins"]['UV-R']
+		rjkey = split_dict['nuvrj']["bins"]['R-J']
+		zkey = split_dict['redshift']["id"]
+
+		# Find quiescent galaxies using NUV-r/r-J criteria
+		ind_nuvrj = (table[uvrkey] > (3*table[rjkey] + 1)) & (table[uvrkey] > 3.1) & (table[zkey] < zcut)
+
+		# Add sfg column
+		sfg = np.ones(len(table))
+		sfg[ind_nuvrj] = 0
+		class_label = split_dict['nuvrj']["id"]  # typically 'sfg', but can be anything.
 		table[class_label] = sfg
 
 		self.separate_by_label(split_dict, table)

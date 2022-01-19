@@ -28,6 +28,7 @@ class SimstackToolbox:
     def __init__(self, param_file_path):
 
         self.config_dict = self.get_params_dict(param_file_path)
+        self.config_dict['cosmology'] = {'Planck15': cosmo}
 
     def replace_self(self, imported_object, dict_list=['results_dict', 'config_dict', 'catalog_dict', 'maps_dict']):
 
@@ -471,3 +472,8 @@ class SimstackToolbox:
         Tdust = T_0 * ((1 + np.array(z)) / (1.0 + z_T)) ** (epsilon_T)
 
         return [logl, Tdust]
+
+    def weaver_completeness(self, z):
+
+        return -3.55 * 1e8*(1 + z) + 2.70 * 1e8*(1 + z)**2.0
+

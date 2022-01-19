@@ -12,7 +12,7 @@ class SimstackResults():
 		super().__init__()
 
 	def parse_results(self, beta_rj=1.8):
-		#self.results_dict = {}
+
 		wavelength_keys = list(self.maps_dict.keys())
 		wavelengths = []
 		split_dict = json.loads(self.config_dict['catalog']['classification'])
@@ -46,18 +46,17 @@ class SimstackResults():
 							if label in results_object[zlab].params:
 								flux_array[z, i, j] = results_object[zlab].params[label].value
 								error_array[z, i, j] = results_object[zlab].params[label].stderr
-							else:
-								print(label, ' does not exist')
+							#else:
+								#print(label, ' does not exist')
 					else:
 						label = "__".join([zval, ival]).replace('.', 'p')
 						#print(label)
-						#pdb.set_trace()
 						if label in results_object[zlab].params:
 							flux_array[z, i] = results_object[zlab].params[label].value
 							error_array[z, i] = results_object[zlab].params[label].stderr
-						else:
-							print(label, ' does not exist')
-			#pdb.set_trace()
+						#else:
+							#print(label, ' does not exist')
+
 			z_bins = [i.replace('p', '.').split('_')[1:] for i in self.config_dict['catalog']['distance_labels']]
 			z_mid = [(float(i[0]) + float(i[1]))/2 for i in z_bins]
 
@@ -85,16 +84,13 @@ class SimstackResults():
 				z_dict['flux_density'][zval] = {}
 				z_dict['std_error'][zval] = {}
 				z_dict['redshift'].append(zval)
-				#z_dict[zval] = {}
 				if len(label_keys) > 2:
 					for j, jval in enumerate(label_dict[label_keys[2]]):
 						z_dict['flux_density'][zval][jval] = flux_array[z, :, j]
 						z_dict['std_error'][zval][jval] = error_array[z, :, j]
-						#z_dict[zval][jval] = {"flux_density": flux_array[z, :, j], "std_error": error_array[z, :, j]}
 				else:
 					z_dict['flux_density'][zval] = flux_array[z, :]
 					z_dict['std_error'][zval] = error_array[z, :]
-					#z_dict[zval] = {"flux_density": flux_array[z, :], "std_error": error_array[z, :]}
 
 			m_dict = {'flux_density': {}, 'std_error': {}, 'stellar_mass': []}
 			for i, ival in enumerate(label_dict[label_keys[1]]):
@@ -135,14 +131,12 @@ class SimstackResults():
 					self.results_dict['SED_df']['std_error'][zlab][jlab] = \
 						pd.DataFrame(sed_error_array[:, z, :, j], index=wavelengths, columns=label_dict[label_keys[1]])
 
+					self.results_dict['SED_df']['LIR'][zlab][jlab] = {}
+					self.results_dict['SED_df']['SED'][zlab][jlab] = {}
 					for i, ilab in enumerate(label_dict[label_keys[1]]):
 						tst_m = self.fast_sed_fitter(wavelengths, sed_flux_array[:, z, i, j], sed_error_array[:, z, i, j],
 													 betain=1.8)
 						tst_LIR = self.fast_Lir(tst_m, z_mid[z])
-						#pdb.set_trace()
-						if jlab not in self.results_dict['SED_df']['LIR']:
-							self.results_dict['SED_df']['LIR'][zlab][jlab] = {}
-							self.results_dict['SED_df']['SED'][zlab][jlab] = {}
 						self.results_dict['SED_df']['LIR'][zlab][jlab][ilab] = tst_LIR.value
 						self.results_dict['SED_df']['SED'][zlab][jlab][ilab] = tst_m
 			else:
@@ -156,13 +150,13 @@ class SimstackResults():
 												 betain=1.8)
 					tst_LIR = self.fast_Lir(tst_m, z_mid[z])
 
-					#pdb.set_trace()
 					if zlab not in self.results_dict['SED_df']['LIR']:
 						self.results_dict['SED_df']['LIR'][zlab] = {}
 						self.results_dict['SED_df']['SED'][zlab] = {}
+
 					self.results_dict['SED_df']['LIR'][zlab][ilab] = tst_LIR.value
 					self.results_dict['SED_df']['SED'][zlab][ilab] = tst_m
 
-		pdb.set_trace()
+		#pdb.set_trace()
 
 

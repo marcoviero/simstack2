@@ -17,6 +17,10 @@ class SimstackAlgorithm(SimstackToolbox, SimstackResults, Skymaps, Skycatalogs):
     def __init__(self, param_path_file):
         super().__init__(param_path_file)
 
+        zbins = json.loads(json.loads(self.config_dict['catalog']['classification'])['redshift']['bins'])
+        self.config_dict['distance_bins'] = {'redshift': zbins,
+                                             'lookback_time': self.config_dict['cosmology']['Planck15'].lookback_time(zbins)}
+
     def perform_simstack(self, add_background=False):
 
         # Get catalog.  Clean NaNs
@@ -245,7 +249,8 @@ class SimstackAlgorithm(SimstackToolbox, SimstackResults, Skymaps, Skycatalogs):
 
         cov_ss_1d = minimize(self.simultaneous_stack_array_oned, fit_params,
                              args=(np.ndarray.flatten(cube),),
-                             kws={'data1d': np.ndarray.flatten(imap), 'err1d': np.ndarray.flatten(ierr)})
+                             kws={'data1d': np.ndarray.flatten(imap), 'err1d': np.ndarray.flatten(ierr)},
+                             nan_policy='propagate')
 
         return cov_ss_1d
 
